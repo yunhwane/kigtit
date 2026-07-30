@@ -49,14 +49,9 @@ pub fn restore_to(project: &Project, id: &str) -> Result<Restored> {
         "되돌림: {target_title}\n\nKigtit-Kind: {}\nKigtit-Restored-From: {target_id}\n",
         SaveKind::Restore.as_str()
     );
-    let oid = project.repo.commit(
-        Some("HEAD"),
-        &sig,
-        &sig,
-        &message,
-        &target_tree,
-        &[&head],
-    )?;
+    let oid = project
+        .repo
+        .commit(Some("HEAD"), &sig, &sig, &message, &target_tree, &[&head])?;
 
     // 3. 작업 폴더를 새 세이브 포인트에 맞춘다.
     let created = project.repo.find_commit(oid)?;

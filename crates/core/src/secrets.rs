@@ -58,9 +58,7 @@ fn patterns() -> Vec<Pattern> {
         ),
     ];
     raw.iter()
-        .filter_map(|(name, p)| {
-            Regex::new(p).ok().map(|re| Pattern { name, re })
-        })
+        .filter_map(|(name, p)| Regex::new(p).ok().map(|re| Pattern { name, re }))
         .collect()
 }
 

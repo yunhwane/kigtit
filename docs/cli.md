@@ -1,41 +1,45 @@
-# 터미널에서 쓰기
+# Using the CLI
 
-앱으로 하는 일은 전부 터미널에서도 됩니다. 바이브 코딩은 터미널에서
-일어나므로, `kigtit`은 앱보다 CLI가 먼저였습니다.
+[한국어](cli.ko.md)
 
-앱 사용법은 [README](../README.md)를 보세요.
+Everything the app does works from a terminal. Building with AI happens in a
+terminal, so `kigtit` was a CLI before it was an app.
 
-## 설치
+The app is covered in the [README](../README.md).
+
+**Output is in Korean.** Kigtit was built for Korean-speaking non-developers, so
+every message it prints is Korean. This page explains what each command does in
+English and shows the real output as it appears.
+
+## Install
 
 ```sh
 cargo install --path crates/cli
 ```
 
-## 한눈에
+## At a glance
 
 ```sh
-kigtit                    # 지금 폴더의 타임라인
-kigtit open               # 이 폴더를 앱 창으로 열기
-kigtit watch              # 자동 저장 켜기
-kigtit save "메모"         # 직접 담기
-kigtit show <id> --code   # 무엇이 바뀌었는지
-kigtit undo               # 마지막 세이브 포인트 이전으로
-kigtit back <id>          # 특정 시점으로
-kigtit health             # 앱이 켜지는지 돌려 보고 기록
-kigtit mark ok|broken     # 판정을 직접 고쳐 쓰기
-kigtit check --fix        # 비밀 키·대용량 파일 검사
-kigtit backup             # GitHub에 백업 (기본: 비공개)
-kigtit sync               # GitHub 쪽 변경 가져와 맞추기
-kigtit summarize          # 요약이 빠진 것들 채우기
+kigtit                    # timeline for the current folder
+kigtit open               # open this folder in the app window
+kigtit watch              # turn on autosave
+kigtit save "a note"      # save on purpose
+kigtit show <id> --code   # what changed
+kigtit undo               # back to before the last save point
+kigtit back <id>          # back to a specific point
+kigtit health             # actually run the app and record whether it starts
+kigtit mark ok|broken     # override that verdict by hand
+kigtit check --fix        # scan for secret keys and large files
+kigtit backup             # back up to GitHub (private by default)
+kigtit sync               # pull changes from GitHub and reconcile
+kigtit summarize          # fill in missing summaries
 ```
 
-`-C <폴더>`를 붙이면 다른 폴더를 대상으로 합니다.
+Add `-C <folder>` to target a different folder.
 
-## 명령 하나하나
+## `kigtit` — the timeline
 
-### `kigtit` — 타임라인
-
-인수 없이 치면 지금 폴더의 타임라인이 나옵니다.
+Run it with no arguments and you get the timeline for the current folder.
 
 ```
 $ kigtit
@@ -58,37 +62,43 @@ $ kigtit
   ○  오후 1:20     프로젝트 시작                         da8d2b9
 ```
 
-읽는 법:
+How to read it:
 
-| 표시 | 뜻 |
+| Mark | Meaning |
 |---|---|
-| `●` 초록 | 이 시점에서 앱이 잘 켜졌다 |
-| `■` 빨강 | **여기서부터 앱이 안 켜졌다** — 아래 줄에 이유와 돌아갈 곳이 나온다 |
-| `○` 회색 | 아직 확인하지 않았다 |
-| `◆` 자주 | 아직 담기지 않은 변경 |
+| `●` green | The app started fine at this point |
+| `■` red | **The app stopped starting here** — the reason and where to go back to follow on the next lines |
+| `○` grey | Not checked yet |
+| `◆` plum | Changes not saved yet |
 
-색만으로 말하지 않습니다. 도형이 같이 붙어서 색맹 사용자와 흑백 출력에서도
-구분됩니다.
+Shape and colour are both used, so it reads correctly if you're colour blind or
+piping to a file.
 
 ```sh
-kigtit list --limit 30    # 더 많이 보기
+kigtit list --limit 30    # show more
 ```
 
-### `kigtit watch` — 자동 저장
+## `kigtit watch` — autosave
 
 ```sh
-kigtit watch              # 3초 유휴 후 자동 저장
-kigtit watch --idle 10    # 10초로 늘리기
+kigtit watch              # save after 3 quiet seconds
+kigtit watch --idle 10    # make it 10 seconds
 ```
 
-끄려면 `Ctrl+C`. 강제로 꺼도 괜찮습니다 — 다시 켜면 놓친 요약을 이어서 채웁니다.
+`Ctrl+C` to stop. Killing it is fine — on the next start it picks up the
+summaries it missed.
 
-### `kigtit save` — 직접 담기
+![Autosave](../demo/watch.gif)
+
+Each save does three things: it stores the change, runs the app to see whether it
+still starts, and asks the local AI CLI to describe what happened.
+
+## `kigtit save` — save on purpose
 
 ```sh
-kigtit save                    # 제목을 AI가 붙여준다
-kigtit save "메뉴 사진 추가"     # 제목을 직접 쓴다
-kigtit save --no-summary       # AI 요약을 기다리지 않는다
+kigtit save                    # the AI writes the title
+kigtit save "add menu photos"  # you write the title
+kigtit save --no-summary       # don't wait for the AI
 ```
 
 ```
@@ -100,24 +110,22 @@ $ kigtit save
      더 둥글어지고 크기가 커졌으며, 그림자 효과가 추가되었습니다.
 ```
 
-### `kigtit show` — 무엇이 바뀌었는지
+## `kigtit show` — what changed
 
 ```sh
-kigtit show                  # 가장 최근 것
-kigtit show 801b8bf          # 특정 시점
-kigtit show 801b8bf --code   # 코드까지 펼치기
+kigtit show                  # the most recent one
+kigtit show 801b8bf          # a specific point
+kigtit show 801b8bf --code   # unfold the code too
 ```
 
-사람 말 설명이 위에 오고, 코드는 `--code`를 줄 때만 나옵니다.
+The plain-language explanation comes first. Code only appears with `--code`.
 
-### `kigtit undo` / `kigtit back` — 되돌리기
+## `kigtit undo` / `kigtit back` — going back
 
 ```sh
-kigtit undo               # 마지막 세이브 포인트 이전으로
-kigtit back 2715681       # 특정 시점으로
+kigtit undo               # back to before the last save point
+kigtit back 2715681       # back to a specific point
 ```
-
-![되돌리기](demo/undo.gif)
 
 ```
 $ kigtit back 2715681
@@ -126,12 +134,15 @@ $ kigtit back 2715681
      되돌린 것도 되돌릴 수 있어요 → kigtit undo
 ```
 
-작업 중이던 미저장 변경이 있어도 괜찮습니다. 되돌리기 전에 먼저 담아 두므로
-잃는 것이 없습니다.
+![Undo](../demo/undo.gif)
 
-### `kigtit health` — 앱이 켜지는지 확인
+Unsaved work in progress is fine. It gets stored before the undo happens, so
+nothing is lost.
 
-저장할 때 알아서 돕니다. 지금 당장 다시 보고 싶을 때만 씁니다.
+## `kigtit health` — does the app start?
+
+This runs on its own every time something is saved. Use the command when you
+want to check again right now.
 
 ```
 $ kigtit health
@@ -147,7 +158,7 @@ $ kigtit health
   마지막으로 잘 켜졌던 시점으로 돌아가려면 `kigtit list`를 보세요.
 ```
 
-판정이 틀렸으면 직접 고쳐 쓸 수 있습니다.
+If the verdict is wrong you can override it.
 
 ```sh
 kigtit mark ok
@@ -155,11 +166,11 @@ kigtit mark broken
 kigtit mark unknown 801b8bf
 ```
 
-### `kigtit check` — 위험한 파일
+## `kigtit check` — risky files
 
 ```sh
-kigtit check          # 검사만
-kigtit check --fix    # 대용량 파일을 백업에서 바로 빼기
+kigtit check          # scan only
+kigtit check --fix    # exclude large files from backup right away
 ```
 
 ```
@@ -172,14 +183,14 @@ $ kigtit check
      추천: 키를 .env 파일로 옮기고 백업에서 빼두기
 ```
 
-값 전체는 화면에 절대 나오지 않습니다.
+The full value is never printed.
 
-### `kigtit backup` — GitHub에 백업
+## `kigtit backup` — back up to GitHub
 
 ```sh
-kigtit backup             # 비공개로 (기본)
-kigtit backup --public    # 누구나 볼 수 있게
-kigtit backup --status    # 올리지 않고 상태만
+kigtit backup             # private (default)
+kigtit backup --public    # visible to everyone
+kigtit backup --status    # status only, don't upload
 ```
 
 ```
@@ -191,75 +202,101 @@ $ kigtit backup
   나만 볼 수 있게 올립니다.
   올리는 중…
   ●  백업했어요 — 세이브 포인트 2개
-     https://github.com/yunhwane/내-프로젝트.git
+     https://github.com/yunhwane/my-project.git
      저장소를 새로 만들었어요.
 ```
 
-키가 하나라도 있으면 **올리지 않습니다.**
+If there's a single key anywhere in the tracked files, **it does not upload.**
 
-![키 유출 차단](demo/secret.gif)
+![Blocked key leak](../demo/secret.gif)
 
-### `kigtit sync` — GitHub와 맞추기
+Note the contrast: `kigtit check` only looks at changes that haven't been stored
+yet, so it says everything is clean. `kigtit backup` scans **every tracked file**,
+because pushing publishes history — a key committed earlier would leak.
 
-다른 컴퓨터에서 한 작업을 가져옵니다.
+## `kigtit sync` — reconcile with GitHub
+
+Pulls in work done on another computer.
 
 ```sh
-kigtit sync                 # 가져와서 맞추기
-kigtit sync --keep mine     # 겹친 파일을 내 것으로
-kigtit sync --keep theirs   # 겹친 파일을 GitHub 것으로
+kigtit sync                 # pull and reconcile
+kigtit sync --keep mine     # overlapping files: keep mine
+kigtit sync --keep theirs   # overlapping files: keep GitHub's
 ```
 
-겹치면 멈추고 물어봅니다. **이때 작업 폴더는 건드리지 않습니다.**
+When files overlap it stops and asks. **Your working folder is untouched at this
+point.**
 
-![선택이 필요해요](demo/sync.gif)
+```
+$ kigtit sync
+  ▲ 선택이 필요해요 — 아래 파일을 양쪽에서 같이 고쳤어요.
+  작업 폴더는 아직 그대로입니다. 아무것도 잃지 않았어요.
 
-### `kigtit open` — 앱 창으로 열기
+    ▲ config.js
+
+  어느 쪽을 남길지 고르세요:
+    kigtit sync --keep mine    내 컴퓨터에서 한 것을 남긴다
+    kigtit sync --keep theirs  GitHub에 있던 것을 남긴다
+```
+
+![A choice is needed](../demo/sync.gif)
+
+Files that don't overlap merge normally, so the choice only applies to files that
+genuinely collided.
+
+## `kigtit open` — open the app window
 
 ```sh
 kigtit open
 ```
 
-터미널에서 작업하다가 눈으로 보고 싶을 때. 앱이 그 폴더로 바로 들어갑니다.
+For when you've been working in the terminal and want to look at it. The app
+opens straight into that folder.
 
-### `kigtit summarize` — 요약 채우기
+## `kigtit summarize` — fill in summaries
 
 ```sh
 kigtit summarize
 kigtit summarize --limit 50
 ```
 
-`--no-summary`로 담았거나 앱이 갑자기 꺼져서 빠진 요약을 채웁니다.
+Fills in summaries missing because you used `--no-summary` or because the app was
+killed mid-flight.
 
 ---
 
-## 만들면서
+## Working on Kigtit
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full loop. The short version:
 
 ```sh
-cargo test -p kigtit-core        # 유닛 테스트
-cargo clippy                     # 린트
-cargo tauri dev                   # 앱을 개발 모드로
-pnpm build                        # 프런트엔드만
+cargo test -p kigtit-core   # unit tests
+cargo clippy                # lint
+cargo tauri dev             # the app in dev mode
+pnpm build                  # frontend only (includes tsc)
 ```
 
-`cargo run`으로 앱을 직접 띄우면 빈 창이 뜹니다 — debug 빌드의 Tauri는
-`devUrl`(localhost:1420)을 보기 때문입니다. `cargo tauri dev`를 쓰거나 release로
-구워야 임베드된 화면을 씁니다.
+`cargo run` on the app gives you a blank window — in debug builds Tauri looks at
+`devUrl` (localhost:1420). Use `cargo tauri dev`, or build release so the
+embedded frontend is used.
 
-DMG 굽기는 Finder 권한이 필요해서 기본 대상에서 뺐습니다. 필요하면
-`src-tauri/tauri.conf.json`의 `bundle.targets`에 `"dmg"`를 넣으세요.
+DMG packaging needs Finder permissions, so it's off by default. Add `"dmg"` to
+`bundle.targets` in `src-tauri/tauri.conf.json` if you want it.
 
-### 화면과 GIF 다시 만들기
+### Regenerating the screenshots and GIFs
 
-둘 다 손으로 찍지 않습니다. 대본이 저장소에 있어서 누구나 같은 결과를
-다시 만들 수 있습니다.
+Neither is captured by hand. The scripts live in the repo so anyone can
+reproduce the same output.
 
 ```sh
 brew install vhs
-brew install --cask font-d2coding   # 한글 고정폭 폰트
-cd demo && ./record.sh              # 터미널 GIF
+brew install --cask font-d2coding   # Korean monospace font
 
-pnpm build && node demo/shots.mjs   # 앱 화면 PNG
+cd demo && ./record.sh              # terminal GIFs
+pnpm build && node demo/shots.mjs   # app screenshots
 ```
 
-`demo/shots.mjs`가 찍는 것은 `src/`의 **실제 화면 코드**입니다. 목업이 아니고,
-백엔드 자리에만 예시 데이터를 물려 줍니다.
+`demo/shots.mjs` renders the **actual screen code** from `src/` — not a mockup.
+Only the backend is replaced with sample data. It runs in a headless browser
+rather than the Tauri window, because capturing the real window needs macOS
+Screen Recording permission.

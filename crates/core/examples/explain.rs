@@ -4,5 +4,8 @@ fn main() {
     let path = std::env::args().nth(2).expect("파일을 넘겨 주세요");
     let project = kigtit_core::Project::open(&dir).unwrap();
     let e = kigtit_core::sync::explain(&project, &path, kigtit_core::ai::detect()).unwrap();
-    println!("파일: {}\n\n[내 컴퓨터에서]\n{}\n\n[GitHub 쪽에서]\n{}", e.path, e.mine, e.theirs);
+    println!(
+        "파일: {}\n\n[내 컴퓨터에서]\n{}\n\n[GitHub 쪽에서]\n{}",
+        e.path, e.mine, e.theirs
+    );
 }

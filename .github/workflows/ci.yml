@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    # Kigtit is macOS-only for now: tools.rs searches macOS install paths and
+    # `kigtit open` shells out to `open`.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+  frontend:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `pnpm build` runs `tsc --noEmit` first, so this covers types too.
+      - name: Type-check and build
+        run: pnpm build
+
+  app:
+    # The bundle is what users actually install, so prove it still packages.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the app bundle
+        # DMG packaging needs Finder access, which CI doesn't have.
+        run: |
+          cargo install tauri-cli --version "^2" --locked
+          cargo tauri build --bundles app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kigtit.app
+          path: target/release/bundle/macos/Kigtit.app
+          if-no-files-found: error
+
+  versions:
+    # The version lives in three files. Drift means the app's About box and
+    # `kigtit --version` disagree, which is confusing and hard to notice.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Versions agree
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          crate=$(sed -n '/\[workspace.package\]/,/^\[/p' Cargo.toml \
+                  | sed -n 's/^version *= *"\(.*\)"/\1/p' | head -1)
+          app=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "package.json=$pkg  Cargo.toml=$crate  tauri.conf.json=$app"
+          test "$pkg" = "$crate" && test "$pkg" = "$app" \
+            || { echo "::error::versions disagree — run scripts/sync-version.mjs"; exit 1; }

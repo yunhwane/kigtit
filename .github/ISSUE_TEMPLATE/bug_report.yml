@@ -1,0 +1,59 @@
+name: Bug report
+description: Something behaved wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        한국어로 써 주셔도 됩니다. Korean or English, either is fine.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you see? Paste the message exactly if there was one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: |
+        1. kigtit save "first"
+        2. echo 'def broken(' > bad.py
+        3. kigtit health
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - The app (Kigtit.app)
+        - The terminal (kigtit)
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`kigtit --version`, or the commit you built from"
+    validations:
+      required: true
+
+  - type: input
+    id: project
+    attributes:
+      label: What kind of project
+      description: Node, Rust, Python, static site, something else

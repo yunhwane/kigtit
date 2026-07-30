@@ -1,0 +1,30 @@
+name: Idea
+description: Something Kigtit should do
+labels: [idea]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Kigtit deliberately solves only three problems: not knowing where to go
+        back to, not being able to read a diff, and leaking API keys. Ideas
+        outside that are still worth filing — but say how they connect.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What went wrong for you
+      description: Describe the situation, not the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you think would help
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do instead today

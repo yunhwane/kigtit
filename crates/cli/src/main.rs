@@ -7,9 +7,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use kigtit_core::{
-    Agent, Project, Risk, SaveKind, SaveOutcome, ai, restore, secrets, timeline,
-};
+use kigtit_core::{Agent, Project, Risk, SaveKind, SaveOutcome, ai, restore, secrets, timeline};
 
 #[derive(Parser)]
 #[command(
@@ -221,9 +219,9 @@ fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
             println!("  \x1b[2m`kigtit backup`으로 먼저 백업해 주세요.\x1b[0m\n");
         }
         Outcome::UpToDate => println!("  \x1b[32m●\x1b[0m  이미 같아요.\n"),
-        Outcome::Pulled { count } => println!(
-            "  \x1b[32m●\x1b[0m  GitHub 쪽 세이브 포인트 {count}개를 가져왔어요.\n"
-        ),
+        Outcome::Pulled { count } => {
+            println!("  \x1b[32m●\x1b[0m  GitHub 쪽 세이브 포인트 {count}개를 가져왔어요.\n")
+        }
         Outcome::Merged { count } => println!(
             "  \x1b[32m●\x1b[0m  겹치는 파일이 없어서 알아서 합쳤어요. GitHub 쪽 {count}개 반영.\n"
         ),
@@ -232,7 +230,9 @@ fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
                 println!(
                     "\n  \x1b[33m▲ 선택이 필요해요\x1b[0m — 아래 파일을 양쪽에서 같이 고쳤어요."
                 );
-                println!("  \x1b[2m작업 폴더는 아직 그대로입니다. 아무것도 잃지 않았어요.\x1b[0m\n");
+                println!(
+                    "  \x1b[2m작업 폴더는 아직 그대로입니다. 아무것도 잃지 않았어요.\x1b[0m\n"
+                );
                 for c in &conflicts {
                     let note = if c.mine_deleted {
                         "  \x1b[2m(내 쪽에서는 지웠어요)\x1b[0m"
@@ -249,13 +249,21 @@ fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
                 return Ok(());
             };
 
-            let side = if side == "mine" { Side::Mine } else { Side::Theirs };
+            let side = if side == "mine" {
+                Side::Mine
+            } else {
+                Side::Theirs
+            };
             let choices: Vec<(String, Side)> =
                 conflicts.iter().map(|c| (c.path.clone(), side)).collect();
             let sp = sync::resolve(project, &choices)?;
             println!(
                 "  \x1b[32m●\x1b[0m  {}쪽으로 정리했어요 \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
-                if side == Side::Mine { "내 " } else { "GitHub " },
+                if side == Side::Mine {
+                    "내 "
+                } else {
+                    "GitHub "
+                },
                 sp.id,
                 sp.title
             );
@@ -300,7 +308,10 @@ fn cmd_open(root: &std::path::Path) -> Result<()> {
         .arg("--args")
         .arg(root)
         .status()?;
-    println!("\n  \x1b[35m◆\x1b[0m  Kigtit 창을 열었어요  \x1b[2m{}\x1b[0m\n", root.display());
+    println!(
+        "\n  \x1b[35m◆\x1b[0m  Kigtit 창을 열었어요  \x1b[2m{}\x1b[0m\n",
+        root.display()
+    );
     Ok(())
 }
 
@@ -314,7 +325,10 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
         "\n  \x1b[35m◆\x1b[0m  자동 저장을 켰어요  \x1b[2m{}\x1b[0m",
         dir.display()
     );
-    println!("     \x1b[2m파일이 바뀌고 {idle_secs}초 조용해지면 알아서 담습니다. 요약: {}\x1b[0m", agent.label());
+    println!(
+        "     \x1b[2m파일이 바뀌고 {idle_secs}초 조용해지면 알아서 담습니다. 요약: {}\x1b[0m",
+        agent.label()
+    );
     println!("     \x1b[2m끄려면 Ctrl+C\x1b[0m\n");
 
     watch::watch(
@@ -333,7 +347,9 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
                 );
             }
             Event::Resuming { count } => {
-                println!("  \x1b[2m↻\x1b[0m  \x1b[2m꺼져 있는 동안 놓친 요약 {count}개를 이어서 채워요\x1b[0m");
+                println!(
+                    "  \x1b[2m↻\x1b[0m  \x1b[2m꺼져 있는 동안 놓친 요약 {count}개를 이어서 채워요\x1b[0m"
+                );
             }
             Event::Checked { outcome, .. } => {
                 let color = match outcome.health {
@@ -515,7 +531,9 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
                 println!("    \x1b[2m{m}\x1b[0m");
             }
         }
-        println!("\n  \x1b[2m`kigtit check --fix`로 안전하게 정리한 뒤 다시 저장해 주세요.\x1b[0m\n");
+        println!(
+            "\n  \x1b[2m`kigtit check --fix`로 안전하게 정리한 뒤 다시 저장해 주세요.\x1b[0m\n"
+        );
         return Ok(());
     }
 
@@ -550,7 +568,10 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
                 println!("     \x1b[2m{}로 요약하는 중…\x1b[0m", agent.label());
             }
             match ai::summarize_save_point(project, &sp.full_id, agent) {
-                Ok(s) => println!("     \x1b[1m{}\x1b[0m\n     \x1b[2m{}\x1b[0m\n", s.title, s.summary),
+                Ok(s) => println!(
+                    "     \x1b[1m{}\x1b[0m\n     \x1b[2m{}\x1b[0m\n",
+                    s.title, s.summary
+                ),
                 Err(e) => println!("     \x1b[2m요약은 건너뛰었어요: {e}\x1b[0m\n"),
             }
         }
@@ -564,7 +585,10 @@ fn cmd_show(project: &Project, id: Option<String>, code: bool) -> Result<()> {
     let id = id.unwrap_or_else(|| "HEAD".to_string());
     let sp = timeline::find(project, &id)?;
 
-    println!("\n  \x1b[1m{}\x1b[0m  \x1b[2m{} · {}\x1b[0m", sp.title, sp.at_label, sp.id);
+    println!(
+        "\n  \x1b[1m{}\x1b[0m  \x1b[2m{} · {}\x1b[0m",
+        sp.title, sp.at_label, sp.id
+    );
     if let Some(how) = &sp.checked_by {
         println!(
             "  {}  \x1b[2m{} · 확인: {}\x1b[0m",
@@ -636,9 +660,7 @@ fn cmd_restore(project: &Project, id: Option<String>) -> Result<()> {
     if let Some(snap) = &done.snapshot_id {
         println!("     \x1b[2m되돌리기 직전 상태는 {snap}에 담아뒀어요.\x1b[0m");
     }
-    println!(
-        "     \x1b[2m되돌린 것도 되돌릴 수 있어요 → kigtit undo\x1b[0m\n"
-    );
+    println!("     \x1b[2m되돌린 것도 되돌릴 수 있어요 → kigtit undo\x1b[0m\n");
     Ok(())
 }
 
@@ -712,7 +734,9 @@ fn cmd_health(project: &Project) -> Result<()> {
         for line in detail.lines() {
             println!("     \x1b[2m{line}\x1b[0m");
         }
-        println!("\n  \x1b[2m마지막으로 잘 켜졌던 시점으로 돌아가려면 `kigtit list`를 보세요.\x1b[0m");
+        println!(
+            "\n  \x1b[2m마지막으로 잘 켜졌던 시점으로 돌아가려면 `kigtit list`를 보세요.\x1b[0m"
+        );
     }
     println!();
     Ok(())

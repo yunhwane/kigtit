@@ -6,7 +6,7 @@
 //! `git2::Repository`는 스레드 간에 넘길 수 없어서 상태로 들고 있지 않는다.
 //! 명령마다 경로로 다시 여는데, 그 비용은 밀리초 단위다.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -67,10 +67,14 @@ struct View {
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 enum SaveReply {
-    Saved { point: timeline::SavePoint },
+    Saved {
+        point: timeline::SavePoint,
+    },
     NoChanges,
     /// 비밀 키를 찾아 멈췄다. 유일하게 흐름을 끊는 경우.
-    Blocked { findings: Vec<secrets::Finding> },
+    Blocked {
+        findings: Vec<secrets::Finding>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -334,7 +338,7 @@ fn read_recents(app: &AppHandle) -> Recents {
         .unwrap_or_default()
 }
 
-fn remember(app: &AppHandle, root: &PathBuf, name: &str) {
+fn remember(app: &AppHandle, root: &Path, name: &str) {
     let root = root.to_string_lossy().to_string();
     let mut recents = read_recents(app);
     recents.items.retain(|r| r.root != root);

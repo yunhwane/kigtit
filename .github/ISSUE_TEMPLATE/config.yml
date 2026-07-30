@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 사용해 봤는데 헷갈렸어요 / The wording confused me
+    url: https://github.com/yunhwane/kigtit/issues/new?template=wording.yml
+    about: 문구가 이해되지 않았다면 그게 버그입니다. This project's whole bet is that plain sentences beat Git vocabulary.

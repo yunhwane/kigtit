@@ -58,6 +58,9 @@ impl SaveKind {
 }
 
 #[derive(Debug)]
+// 만들어진 직후 바로 match해서 쓰고 버린다. 컬렉션에 쌓지 않으므로
+// 변형 간 크기 차이가 비용이 되지 않는다. Box로 감싸면 호출부만 번거로워진다.
+#[allow(clippy::large_enum_variant)]
 pub enum SaveOutcome {
     /// 새 세이브 포인트가 만들어졌다.
     Saved(SavePoint),

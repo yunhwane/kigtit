@@ -1,91 +1,103 @@
 # Kigtit
 
-**되돌릴 수 있다는 확신** — 바이브 코딩하는 사람을 위한 세이브 포인트.
+**Confidence that you can undo.** Save points for people who build with AI.
 
-AI한테 시켜서 만들다 보면 잘 되던 게 망가집니다. 그런데 어디로 돌아가야 하는지
-알 수가 없습니다. Kigtit은 그것만 풉니다.
+[한국어](README.ko.md)
 
-![타임라인](demo/app-timeline.png)
+When you build by telling an AI what to do, things that used to work break. And
+you have no idea which point to go back to. Kigtit solves only that.
 
-깃 용어가 하나도 없습니다. 커밋 버튼도, 브랜치도 없습니다. 있는 것은
-**내가 시킨 일의 목록**과 **여기로 되돌리기** 버튼 하나입니다.
+![Timeline](demo/app-timeline.png)
+
+There is no Git vocabulary anywhere. No commit button, no branches. What you get
+is **a list of the things you asked for** and one **Go back to here** button.
+
+> **The app's interface is in Korean.** Kigtit was built for Korean-speaking
+> non-developers, and every label, summary and error explanation is written in
+> Korean. The code, comments in this README, and the docs are in English so the
+> design can be read and reused by anyone. Interface localization is
+> [not done yet](#not-there-yet).
 
 ---
 
-## 무엇이 다른가
+## What's different
 
-### AI가 언제부터 망쳤는지 알려줍니다
+### It tells you when the AI broke things
 
-저장할 때마다 앱을 **실제로 한 번 돌려 봅니다.** 그래서 타임라인에
-`앱 잘 켜짐`과 `여기서 앱이 안 켜졌어요`가 박혀 있습니다. 어디로 돌아가면
-되는지도 같이 알려줍니다.
+Every time it saves, it **actually tries to run your app.** So the timeline is
+marked with `앱 잘 켜짐` (app starts fine) and `여기서 앱이 안 켜졌어요` (it
+stopped starting here). It also tells you where to go back to.
 
-기존 깃 도구에는 이 정보가 아예 없습니다. 커밋 목록만 있으면 어느 커밋에서
-앱이 살아 있었는지는 하나씩 되돌려 보며 찾아야 합니다.
+Existing Git tools do not have this information at all. A list of commits alone
+doesn't tell you which commit had a working app — you have to revert one by one
+to find out.
 
-![안 켜지는 이유](demo/app-broken.png)
+![Why it won't start](demo/app-broken.png)
 
-안 켜지는 이유도 그대로 보여줍니다. 코드를 못 읽어도, 이 시점이 문제라는 것과
-어디로 가면 되는지는 알 수 있습니다.
+It shows why, too. Even if you can't read code, you can tell that this point is
+the problem and where to go instead.
 
-### 바뀐 내용을 사람 말로 설명합니다
+### It explains changes in plain language
 
-diff를 읽을 수 있는 사람은 많지 않습니다. 그래서 모든 설명이 코드가 아니라
-문장입니다.
+Not many people can read a diff. So every explanation is a sentence, not code.
 
 > 메뉴 카드 위쪽에 사진 영역을 새로 만들었어요. 사진이 아직 없는 메뉴에는
 > 회색 기본 이미지가 대신 보입니다.
+>
+> *(A photo area was added above each menu card. Menus without a photo yet show
+> a grey placeholder instead.)*
 
-코드는 "코드로 보기"를 눌렀을 때만 나옵니다.
+Code only appears when you press "코드로 보기" (show me the code).
 
-### 되돌리기가 무섭지 않습니다
+### Undo isn't scary
 
-![되돌리기](demo/app-revert.png)
+![Undo](demo/app-revert.png)
 
-되돌리기도 하나의 세이브 포인트로 남습니다. 그래서 **되돌린 것도 되돌릴 수**
-있고, 작업이 영구히 사라지는 길이 앱 안에 없습니다. 되돌리기 직전 상태까지
-따로 담아 둡니다.
+An undo becomes a save point of its own. So you can **undo the undo**, and
+there is no path inside the app that destroys work permanently. The state right
+before the undo is stored separately too.
 
-### 저장 버튼이 없습니다
+### There is no save button
 
-파일이 바뀌고 몇 초 조용해지면 알아서 담습니다. AI가 파일을 쏟아내는 동안은
-계속 기다리므로, **시킨 일 한 번이 세이브 포인트 하나**가 됩니다. "저장해야
-한다"는 것 자체를 배우지 않아도 됩니다.
+A few quiet seconds after a file changes, it saves on its own. While the AI is
+still writing files it keeps waiting, so **one thing you asked for becomes one
+save point.** You never have to learn that saving is something you must do.
 
-### API 키를 입력하는 화면이 없습니다
+### There is no screen that asks for an API key
 
-![GitHub 백업](demo/app-backup.png)
+![GitHub backup](demo/app-backup.png)
 
-설명을 만드는 AI도, GitHub 백업도 **이미 로그인해 둔 도구를 빌려 씁니다.**
-토큰을 만들거나 붙여넣을 일이 없습니다. 백업은 기본이 비공개이고, 공개는 직접
-체크해야 합니다.
+Both the AI that writes the explanations and the GitHub backup **borrow tools
+you have already signed into.** You never create or paste a token. Backups are
+private by default; public is something you have to check on purpose.
 
-올리기 전에 **비밀 키를 검사해서 하나라도 있으면 올리지 않습니다.** 한 번
-올라간 키는 몇 분 안에 봇이 긁어 갑니다.
+Before uploading, it **scans for secret keys and refuses to upload if it finds
+one.** A key that goes public gets scraped by bots within minutes.
 
-### 충돌에 `<<<<<<< HEAD`를 보여주지 않습니다
+### Conflicts never show you `<<<<<<< HEAD`
 
-![선택이 필요해요](demo/app-conflict.png)
+![A choice is needed](demo/app-conflict.png)
 
-두 컴퓨터에서 같은 파일을 고치면 보통 여기서 포기합니다. Kigtit은 **양쪽이
-무엇을 하려 했는지 문장으로 설명**하고, 파일마다 어느 쪽을 남길지만 고르게
-합니다. 다 고를 때까지 아무것도 바뀌지 않습니다.
+Editing the same file on two computers is usually where people give up. Kigtit
+**explains in sentences what each side was trying to do** and asks only which
+side to keep, per file. Nothing changes until you've chosen everything.
 
 ---
 
-## 시작하기
+## Getting started
 
-![첫 실행](demo/app-start.png)
+![First run](demo/app-start.png)
 
-작업하던 폴더를 끌어다 놓으면 끝입니다. 계정도, 설정 화면도, 깃 설치 확인도
-없습니다.
+Drop the folder you've been working in. That's it. No account, no settings
+screen, no checking whether Git is installed.
 
-### 설치
+### Install
 
-> **솔직히 말하면, 지금은 개발자가 아니면 설치하기 어렵습니다.**
-> 서명된 설치 파일(.dmg)이 아직 없어서 직접 빌드해야 합니다. 이 제품이 풀려는
-> 문제를 설치 과정이 그대로 저지르고 있습니다. 아는 개발자에게 아래를 한 번
-> 부탁하시거나, [이슈](https://github.com/yunhwane/kigtit/issues)에 남겨 주세요.
+> **Honestly: right now you can't install this unless you're a developer.**
+> There is no signed installer (.dmg) yet, so you have to build it. The install
+> process commits the exact sin this product exists to fix. Ask a developer
+> friend to run the lines below, or say so in an
+> [issue](https://github.com/yunhwane/kigtit/issues).
 
 ```sh
 git clone https://github.com/yunhwane/kigtit
@@ -95,75 +107,84 @@ cargo tauri build
 cp -R target/release/bundle/macos/Kigtit.app ~/Applications/
 ```
 
-필요한 것: macOS, [Rust](https://rustup.rs), [Node](https://nodejs.org).
+Requires macOS, [Rust](https://rustup.rs), and [Node](https://nodejs.org).
 
-### 있으면 좋은 것
+### Nice to have
 
-없어도 동작합니다.
+Everything works without these.
 
-| | 무엇이 좋아지는가 | 없으면 |
+| | What it improves | Without it |
 |---|---|---|
-| [Claude Code](https://claude.com/claude-code) 또는 Codex | 바뀐 내용을 사람 말로 설명 | 파일 목록만 보여줌 |
-| [gh](https://cli.github.com) | GitHub 백업·맞추기 | 백업 기능만 못 씀 |
+| [Claude Code](https://claude.com/claude-code) or Codex | Changes explained in plain language | You get a file list only |
+| [gh](https://cli.github.com) | GitHub backup and sync | Only the backup features are unavailable |
 
-이미 깔아서 로그인해 두었다면 Kigtit이 알아서 찾아 씁니다. 설정할 것은 없습니다.
+If they're already installed and signed in, Kigtit finds and uses them. There is
+nothing to configure.
 
 ---
 
-## 화면 하나하나
+## The screens
 
-| 화면 | 하는 일 |
+| Screen | What it does |
 |---|---|
-| **타임라인** | 왼쪽에 프로젝트, 가운데 내가 시킨 일 목록, 오른쪽에 자세한 내용. 점 하나가 시킨 일 한 번 |
-| **자세히** | 사람 말 설명이 위, 코드는 눌렀을 때만. 안 켜지는 이유가 여기 나온다 |
-| **되돌리기** | 어디로 돌아가는지 확인하고, 지금 상태가 안전하다는 것도 알려준다 |
-| **GitHub 백업** | 비공개가 기본. 키가 있으면 멈춘다 |
-| **선택이 필요해요** | 양쪽 설명을 읽고 파일마다 고르기 |
-| **키 유출 경고** | 자동 저장을 멈추는 유일한 순간 |
+| **Timeline** | Projects on the left, the list of things you asked for in the middle, details on the right. One dot is one thing you asked for |
+| **Details** | Plain-language explanation on top, code only when you ask. The reason it won't start shows up here |
+| **Undo** | Confirms where you're going back to, and tells you your current state is safe |
+| **GitHub backup** | Private by default. Stops if there's a key |
+| **A choice is needed** | Read both explanations, choose per file |
+| **Key leak warning** | The only moment autosave interrupts you |
 
-타임라인 읽는 법:
+Reading the timeline:
 
-| 표시 | 뜻 |
+| Mark | Meaning |
 |---|---|
-| 초록 동그라미 | 이 시점에서 앱이 잘 켜졌다 |
-| 빨간 네모 | **여기서부터 앱이 안 켜졌다** — 이유와 돌아갈 곳이 같이 나온다 |
-| 빈 동그라미 | 아직 확인하지 않았다 |
-| 채운 동그라미 | 아직 저장되지 않은 변경 |
+| Green circle | The app started fine at this point |
+| Red square | **The app stopped starting here** — the reason and where to go back to come with it |
+| Hollow circle | Not checked yet |
+| Filled circle | Changes not saved yet |
 
-모양과 색을 같이 씁니다. 색맹이어도, 흑백으로 봐도 구분됩니다.
-
----
-
-## 터미널에서도 됩니다
-
-앱으로 하는 일은 전부 터미널에서도 됩니다. 바이브 코딩이 터미널에서
-일어나니까요. 터미널에서 `kigtit`만 치면 타임라인이 나옵니다.
-
-![터미널 타임라인](demo/timeline.gif)
-
-명령 13개 전체와 예시는 **[터미널에서 쓰기](docs/cli.md)** 에 있습니다.
+Shape and colour are both used. It reads correctly if you're colour blind or
+looking at it in black and white.
 
 ---
 
-## 더 읽을 것
+## It works in the terminal too
 
-- **[터미널에서 쓰기](docs/cli.md)** — 명령 하나하나, 실제 출력과 함께
-- **[어떻게 만들었나](docs/design.md)** — 설계 원칙, 용어 대응표, 판정 방식,
-  왜 API 키를 받지 않는지
-- **[화면 설계](design/screens.html)** — 브라우저로 열면 클릭할 수 있는 목업
+Everything the app does works from a terminal, because that's where building
+with AI happens. Type `kigtit` and you get the timeline.
 
-## 아직 없는 것
+![Terminal timeline](demo/timeline.gif)
 
-- **서명된 설치 파일이 없습니다.** 비개발자가 혼자 설치할 수 없다는 뜻이고,
-  이게 지금 가장 큰 구멍입니다.
-- macOS만 됩니다.
-- 히스토리에서 지워진 키는 검사하지 못합니다. 지금 파일에 있는 것만 잡습니다.
-- 충돌 선택은 파일 단위입니다. "양쪽 다 조금씩 남기기"는 할 수 없습니다.
-- 여러 사람이 같이 쓰는 경우는 다루지 않습니다. 혼자 여러 기기를 쓰는 경우까지만.
-- **실제 비개발자에게 써보게 한 적이 아직 없습니다.** 위에 적은 문제들은 전부
-  가설입니다. 써보셨다면 [이슈](https://github.com/yunhwane/kigtit/issues)로
-  알려 주세요.
+All 13 commands with examples are in **[Using the CLI](docs/cli.md)**.
 
-## 라이선스
+---
+
+## Further reading
+
+- **[Using the CLI](docs/cli.md)** — every command, with real output
+- **[How it's built](docs/design.md)** — design principles, the vocabulary
+  mapping, how the health check works, why it takes no API keys
+- **[Contributing](CONTRIBUTING.md)** — how to build, test, and send changes
+- **[Changelog](CHANGELOG.md)**
+- **[Screen designs](design/screens.html)** — open in a browser for a clickable
+  mockup
+
+## Not there yet
+
+- **There is no signed installer.** Which means a non-developer cannot install
+  this alone, and that is the biggest hole right now.
+- **The interface is Korean only.** No localization layer exists yet; strings are
+  inline in the components and in `crates/core`.
+- macOS only.
+- Keys that were deleted from history aren't detected. Only what's in the files
+  right now gets caught.
+- Conflict choices are per file. "Keep a bit of both" isn't possible.
+- Multiple people working together isn't handled. One person across several
+  machines is as far as it goes.
+- **No non-developer has actually used this yet.** Every problem listed above is
+  a hypothesis. If you've tried it, please
+  [open an issue](https://github.com/yunhwane/kigtit/issues).
+
+## License
 
 MIT

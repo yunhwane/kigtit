@@ -131,7 +131,9 @@ pub fn backfill(project: &Project, agent: Agent, limit: usize) -> Result<usize> 
 pub fn describe_change(patch: &str, agent: Agent) -> String {
     if agent == Agent::Rules {
         let (added, removed) = count_lines(patch);
-        return format!("{added}줄이 늘고 {removed}줄이 줄었어요. 자세한 설명을 보려면 Claude Code나 Codex를 설치해 주세요.");
+        return format!(
+            "{added}줄이 늘고 {removed}줄이 줄었어요. 자세한 설명을 보려면 Claude Code나 Codex를 설치해 주세요."
+        );
     }
     match run_agent(agent, patch) {
         Ok(s) => s.summary,
@@ -218,8 +220,9 @@ fn parse(text: &str, agent: Agent) -> Result<Summary> {
     let start = text.find('{');
     let end = text.rfind('}');
     let raw: Raw = match (start, end) {
-        (Some(s), Some(e)) if e > s => serde_json::from_str(&text[s..=e])
-            .map_err(|_| anyhow!("요약을 읽을 수 없어요."))?,
+        (Some(s), Some(e)) if e > s => {
+            serde_json::from_str(&text[s..=e]).map_err(|_| anyhow!("요약을 읽을 수 없어요."))?
+        }
         _ => return Err(anyhow!("요약이 비어 있어요.")),
     };
 

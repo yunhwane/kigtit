@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "app": "cargo tauri dev",
-    "app:build": "cargo tauri build"
+    "app:build": "cargo tauri build",
+    "release": "release-it"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -21,6 +22,7 @@
     "@vitejs/plugin-react": "^5",
     "playwright": "^1.62.0",
     "typescript": "^5",
-    "vite": "^7"
+    "vite": "^7",
+    "release-it": "^19"
   }
 }

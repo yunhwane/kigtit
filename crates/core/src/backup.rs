@@ -167,8 +167,8 @@ pub fn run(project: &Project, private: bool) -> Result<Done> {
         ));
     }
 
-    let branch = current_branch(project)
-        .ok_or_else(|| anyhow!("어느 갈래를 올려야 할지 알 수 없어요."))?;
+    let branch =
+        current_branch(project).ok_or_else(|| anyhow!("어느 갈래를 올려야 할지 알 수 없어요."))?;
     let count = unbacked(project, &branch)?;
 
     let created = match remote_url(project) {
@@ -195,14 +195,7 @@ fn create_repo(project: &Project, private: bool) -> Result<()> {
     let out = tools::run(
         "gh",
         &[
-            "repo",
-            "create",
-            &name,
-            visibility,
-            "--source",
-            ".",
-            "--remote",
-            "origin",
+            "repo", "create", &name, visibility, "--source", ".", "--remote", "origin",
         ],
         &project.root,
         GH_TIMEOUT,
@@ -268,7 +261,10 @@ mod tests {
     #[test]
     fn repo_names_survive_korean_folders() {
         assert_eq!(repo_name(Path::new("/tmp/카페 주문 앱")), "kigtit-project");
-        assert_eq!(repo_name(Path::new("/tmp/cafe order app")), "cafe-order-app");
+        assert_eq!(
+            repo_name(Path::new("/tmp/cafe order app")),
+            "cafe-order-app"
+        );
         assert_eq!(repo_name(Path::new("/tmp/my_app.v2")), "my_app.v2");
         assert_eq!(repo_name(Path::new("/tmp/내 blog 사이트")), "blog");
     }
@@ -279,7 +275,10 @@ mod tests {
         assert_eq!(account_from(text).as_deref(), Some("yunhwane"));
         // 로그인 줄이 아니면 "account"가 들어 있어도 읽지 않는다.
         assert_eq!(account_from("no account here"), None);
-        assert_eq!(account_from("You are not logged into any GitHub hosts"), None);
+        assert_eq!(
+            account_from("You are not logged into any GitHub hosts"),
+            None
+        );
         assert_eq!(account_from(""), None);
     }
 }

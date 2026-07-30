@@ -17,8 +17,8 @@ use serde::{Deserialize, Serialize};
 use crate::Result;
 use crate::notes::{self, Meta};
 use crate::repo::Project;
-use crate::tools;
 use crate::timeline::{self, Health};
+use crate::tools;
 
 /// 이보다 오래 걸리면 판단을 포기한다. 빌드가 느린 프로젝트도 있다.
 const TIMEOUT: Duration = Duration::from_secs(180);
@@ -141,12 +141,9 @@ fn runner_for(root: &Path) -> std::result::Result<String, String> {
 fn has_ext(root: &Path, ext: &str) -> bool {
     std::fs::read_dir(root)
         .map(|entries| {
-            entries.flatten().any(|e| {
-                e.path()
-                    .extension()
-                    .map(|x| x == ext)
-                    .unwrap_or(false)
-            })
+            entries
+                .flatten()
+                .any(|e| e.path().extension().map(|x| x == ext).unwrap_or(false))
         })
         .unwrap_or(false)
 }

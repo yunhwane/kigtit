@@ -188,11 +188,11 @@ fn describe_side(
 
     let base_tree = base.tree().ok();
     let side_tree = side.tree().ok();
-    let Ok(diff) = project.repo.diff_tree_to_tree(
-        base_tree.as_ref(),
-        side_tree.as_ref(),
-        Some(&mut opts),
-    ) else {
+    let Ok(diff) =
+        project
+            .repo
+            .diff_tree_to_tree(base_tree.as_ref(), side_tree.as_ref(), Some(&mut opts))
+    else {
         return "무엇이 달라졌는지 읽지 못했어요.".into();
     };
 
@@ -285,14 +285,9 @@ fn commit_merge(
     let sig = project.signature()?;
 
     let message = format!("{headline}\n\nKigtit-Kind: {}\n", SaveKind::Manual.as_str());
-    let oid = project.repo.commit(
-        Some("HEAD"),
-        &sig,
-        &sig,
-        &message,
-        &tree,
-        &[mine, theirs],
-    )?;
+    let oid = project
+        .repo
+        .commit(Some("HEAD"), &sig, &sig, &message, &tree, &[mine, theirs])?;
 
     let created = project.repo.find_commit(oid)?;
     save::checkout_tree(project, &created.tree()?)?;

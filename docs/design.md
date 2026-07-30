@@ -1,204 +1,186 @@
-# 어떻게 만들었나
+# How it's built
 
-왜 이런 선택을 했는지. 사용법은 [README](../README.md)를 보세요.
+[한국어](design.ko.md)
 
-## 설계 원칙
+Why the choices are what they are. For how to use it, see the
+[README](../README.md).
+
+## Who this is for
+
+Existing Git GUIs (Sourcetree, GitKraken, GitHub Desktop) are tools for
+*developers who know Git and find the CLI tedious*. Someone building with AI has
+different problems:
+
+1. **The AI broke something that used to work and they don't know where to go
+   back to** — by a wide margin the biggest one
+2. **They don't know what changed** — they can't read a diff. Thirty changed
+   files is terrifying
+3. **They commit an API key and leak it** — the point where real money is lost
+
+Kigtit solves only these three. Everything else it deliberately doesn't do.
+
+## Design principles
 
 | | |
 |---|---|
-| **커밋 버튼이 없다** | 파일이 바뀌고 3초 조용해지면 알아서 담는다. "저장해야 한다"를 배우지 않아도 된다. |
-| **되돌리기도 기록된다** | `reset --hard`를 쓰지 않는다. 되돌림은 새 세이브 포인트로 남는다. 작업이 영구히 사라지는 경로가 앱 안에 없다. |
-| **diff보다 문장이 먼저** | 모든 설명이 코드가 아니라 사람 말이다. 코드는 원할 때만 펼친다. |
-| **"앱이 켜졌는가"가 타임라인에 박힌다** | 저장할 때마다 실제로 빌드를 돌려 본다. 실패하면 그 이유까지 보여준다. |
-| **충돌에 hunk 병합을 요구하지 않는다** | `<<<<<<< HEAD`를 보여주지 않는다. 양쪽이 뭘 하려 했는지 설명하고 파일 단위로 고르게 한다. |
-| **상태를 색만으로 말하지 않는다** | 잘 켜짐 `●`, 실패 `■`, 경고 `▲`. 색맹 사용자와 흑백 출력에서도 구분된다. |
-| **위험한 것만 막는다** | 비밀 키, 대용량 파일, 의존성 폴더. 그 외에는 아무것도 묻지 않는다. |
+| **There is no commit button** | A few quiet seconds after a file changes, it saves. Nobody has to learn that saving is a thing you must do. |
+| **Undo is recorded too** | `reset --hard` is never used. An undo becomes a new save point. No path inside the app destroys work permanently. |
+| **Sentences before diffs** | Every explanation is plain language, not code. Code unfolds only when asked. |
+| **"Does the app start" is pinned to the timeline** | Every save actually runs the app. On failure it shows the reason. |
+| **Conflicts never demand hunk merging** | `<<<<<<< HEAD` is never shown. Both sides are explained, and the choice is per file. |
+| **State is never colour alone** | Starts `●`, broken `■`, warning `▲`. Readable when colour blind or in black and white. |
+| **Only block what's dangerous** | Secret keys, large files, dependency folders. Nothing else interrupts. |
 
-### 용어 대응표
+## Vocabulary
 
-| Git | 화면에 쓰는 말 | 이유 |
-|---|---|---|
-| commit | 세이브 포인트 | 게임에서 이미 배운 개념 |
-| revert / reset | 여기로 되돌리기 | 둘의 차이를 사용자가 알 필요 없음 |
-| branch | 다른 방법으로 해보기 | 목적을 이름으로 씀 |
-| diff | 무엇이 바뀌었나 | 질문 형태가 더 읽힘 |
-| push | GitHub에 백업 | 백업은 누구나 아는 말 |
-| pull | GitHub와 맞추기 | |
-| merge conflict | 선택이 필요해요 | 충돌은 겁을 주고, 선택은 행동을 부름 |
-| .gitignore | 백업에서 빼두기 | 파일 이름을 노출하지 않음 |
+Nothing in the interface uses Git's words.
 
----
+| Git | What the UI says | Literally | Why |
+|---|---|---|---|
+| commit | 세이브 포인트 | save point | A concept already learned from games |
+| revert / reset | 여기로 되돌리기 | go back to here | The user doesn't need to know the difference |
+| branch | 다른 방법으로 해보기 | try it another way | Named for its purpose |
+| diff | 무엇이 바뀌었나 | what changed | A question reads better |
+| push | GitHub에 백업 | back up to GitHub | Everyone knows what a backup is |
+| pull | GitHub와 맞추기 | line up with GitHub | |
+| merge conflict | 선택이 필요해요 | a choice is needed | "Conflict" frightens; "choice" prompts action |
+| .gitignore | 백업에서 빼두기 | leave out of the backup | Never exposes the filename |
 
-## API 키를 받지 않습니다
+## It takes no API keys
 
-사람 말 요약은 **이미 설치된 AI CLI를 그대로 빌려 씁니다.** 타겟 사용자는 바이브
-코더이므로 `claude`나 `codex`가 이미 깔려서 로그인까지 끝나 있습니다. 백업도
-같은 이유로 이미 로그인된 `gh`를 빌려 씁니다.
+Plain-language summaries **borrow an AI CLI that's already installed.** The target
+user builds with AI, so `claude` or `codex` is already there and signed in.
+Backup borrows an already-authenticated `gh` for the same reason.
 
-- 설정 화면이 없다
-- 요금이 따로 붙지 않는다
-- 키가 유출될 표면이 애초에 없다
+- No settings screen
+- No separate bill
+- No surface for a key to leak from
 
-우선순위는 `claude` → `codex` → 규칙 기반 폴백입니다. 아무것도 없어도 기능이
-죽지 않고, 파일 목록으로 만들 수 있는 만큼만 말합니다.
+Priority is `claude` → `codex` → a rule-based fallback. With none of them the
+feature doesn't die; it says as much as a file list allows.
 
-### 요약은 나중에 붙습니다
+### Summaries arrive later
 
-요약 하나에 8초쯤 걸립니다. 커밋 메시지를 고치면 해시가 바뀌므로,
-`refs/notes/kigtit`에 JSON으로 나중에 붙입니다. **해시는 그대로 유지됩니다.**
+One summary takes about 8 seconds. Editing a commit message would change the
+hash, so it's attached afterwards as JSON in `refs/notes/kigtit`. **The hash
+stays the same.**
 
-대기열을 파일로 따로 두지 않습니다 — "요약이 없는 세이브 포인트" 자체가
-대기열이고 그건 이미 git에 남아 있습니다. 감시를 켤 때 최근 40개를 훑어 빠진
-것을 최대 8개까지 채웁니다.
+There is no queue file. "Save points without a summary" *is* the queue, and it
+already lives in Git. A queue file could only get corrupted or drift out of sync
+with reality. On startup the watcher scans the most recent 40 and fills in up to 8.
 
-### PATH에 의존하지 않습니다
+### It doesn't rely on PATH
 
-Finder나 Dock에서 켠 앱은 로그인 셸의 PATH를 물려받지 못합니다. launchd가 주는
-건 `/usr/bin:/bin:/usr/sbin:/sbin` 정도라서, `claude`(보통 `~/.local/bin`)와
-`pnpm`(보통 `/opt/homebrew/bin`)이 **없는 것처럼 보입니다.** 터미널에서 켜면
-되던 것이 아이콘을 더블클릭하면 조용히 죽는, 찾기 어려운 종류의 고장입니다.
+An app launched from Finder or the Dock does not inherit the login shell's PATH.
+launchd gives it roughly `/usr/bin:/bin:/usr/sbin:/sbin`, so `claude` (usually in
+`~/.local/bin`) and `pnpm` (usually in `/opt/homebrew/bin`) **look like they don't
+exist.** Things that work from a terminal die silently when the icon is
+double-clicked — the hardest kind of bug to find.
 
-그래서 [`crates/core/src/tools.rs`](crates/core/src/tools.rs)가 PATH를 먼저 보고,
-없으면 도구가 실제로 깔리는 자리들을 직접 뒤져 절대 경로로 실행합니다.
+So [`crates/core/src/tools.rs`](../crates/core/src/tools.rs) checks PATH first
+and, failing that, searches the places tools actually get installed, then runs
+them by absolute path. Spawning a login shell to harvest PATH is the other
+option, but a weird profile would hang app startup. A static candidate list is
+safer and faster.
 
----
+## How it knows whether the app starts
 
-## 앱이 켜지는지 어떻게 아는가
+It works out what kind of project this is and actually runs something.
 
-프로젝트 종류를 알아보고 실제로 한 번 돌려 봅니다.
-
-| 프로젝트 | 확인 방법 |
+| Project | How it checks |
 |---|---|
-| `package.json` + `build` 스크립트 | `<러너> run build` — 타입 오류, 빠진 파일, 문법 오류가 다 걸린다 |
-| `package.json` + `tsconfig.json` | `tsc --noEmit` |
+| `package.json` with a `build` script | `<runner> run build` — catches type errors, missing files, syntax errors |
+| `package.json` with `tsconfig.json` | `tsc --noEmit` |
 | `Cargo.toml` | `cargo check` |
-| `pyproject.toml` 또는 `.py` | `python3 -m compileall` |
+| `pyproject.toml` or `.py` files | `python3 -m compileall` |
 
-판정은 **세 갈래**입니다. 성공/실패만이 아니라 "판단할 수 없음"을 분명히
-구분합니다. 확인할 방법이 없는데 실패로 적으면 사용자를 엉뚱한 시점으로
-되돌리게 만듭니다. `node_modules`가 없으면 무엇을 돌려도 진짜 실패인지 알 수
-없으므로 판단하지 않습니다.
+The verdict has **three branches**, not two: success, failure, and *can't tell*.
+Recording a failure when there was no way to check would send the user back to
+the wrong point. If `node_modules` is missing, nothing you run tells you whether
+the failure is real, so no verdict is recorded.
 
-빌드는 30초씩 걸릴 수 있어서 저장마다 새로 띄우면 쌓입니다. 그래서 확인
-스레드는 하나만 두고, 밀린 요청은 **가장 새것만** 확인합니다. 확인 중에 새
-세이브 포인트가 생겼다면 그 결과는 버립니다 — 엉뚱한 시점에 `■`를 붙이면
-안 되니까요.
+A build can take 30 seconds, so spawning one per save would pile them up. There
+is a single checker thread, and a backlog collapses to **only the newest** request.
+If a new save point appears mid-check the result is thrown away — pinning `■` to
+the wrong point is worse than being slow. The verdict converges, late.
 
-## 선택이 필요해요 (충돌)
+## A choice is needed (conflicts)
 
-충돌은 비개발자가 포기하는 지점입니다. 대부분 여기서 폴더 복사본을 만듭니다.
+Conflicts are where non-developers give up. Most people make a copy of the folder.
 
-**hunk 단위 병합을 요구하지 않습니다.** 코딩을 배운 적 없는 사람에게
-`<<<<<<< HEAD`를 보여 주는 건 아무 도움이 안 됩니다. 파일 단위로 "내 것" /
-"저쪽 것"만 고르게 합니다. 겹치지 않은 파일은 양쪽 변경이 그대로 합쳐지므로,
-선택은 진짜 겹친 파일에만 적용됩니다.
+**Hunk-level merging is never demanded.** Showing `<<<<<<< HEAD` to someone who
+never learned to code helps with nothing. The choice is per file: mine or theirs.
+Files that don't overlap merge normally, so the choice applies only to files that
+genuinely collided.
 
-**대신 양쪽이 무엇을 하려 했는지 AI가 설명합니다.** 이게 고를 수 있게 만드는
-유일한 정보입니다.
+**Instead, an AI explains what each side was trying to do.** This is the only
+information that makes the choice possible.
 
 ```
-파일: config.js
+File: config.js
 
-[내 컴퓨터에서]
-카페의 영업시간이 밤 10시까지에서 오후 6시까지로 변경되어 더 일찍 닫게
-됩니다. 일요일에 문을 닫는다는 정보가 새로 추가되었습니다.
+[On my computer]
+The cafe's hours changed from closing at 10pm to closing at 6pm, so it now
+closes earlier. Information about being closed on Sundays was added.
 
-[GitHub 쪽에서]
-카페 이름이 '내 카페 ☕'로 바뀌고, 영업시간이 새벽 7시부터 밤 11시까지로
-늘어났습니다. 새벽 배송이 시작되었다는 공지가 추가되었습니다.
+[On GitHub]
+The cafe's name became '내 카페 ☕', and hours were extended from 7am to 11pm.
+A notice was added saying early-morning delivery has started.
 ```
 
-**반쯤 병합된 상태를 절대 만들지 않습니다.** 병합은 메모리에서 계산하고, 충돌이
-있으면 작업 폴더를 **건드리지 않은 채** 목록만 돌려줍니다. 충돌 표시가 파일에
-새어 들지 않고, `MERGING` 상태로 남지도 않습니다. 중간에 그만둬도 잃는 게
-없습니다.
+**A half-merged state is never created.** The merge is computed in memory, and if
+there's a conflict the working folder is **left untouched** and only the list is
+returned. Conflict markers never leak into files, and the repository never sits in
+`MERGING`. Quit halfway and nothing is lost.
 
-## 백업 전 관문
+## The gate before backup
 
-`kigtit check`는 아직 담기지 않은 변경만 봅니다. 하지만 **push는 히스토리를
-공개합니다** — 이미 커밋된 키가 그대로 새어 나갑니다. 그래서 백업은 추적 중인
-**모든 파일**을 검사하고, 비밀 키가 하나라도 있으면 올리지 않습니다.
+`kigtit check` only looks at changes that haven't been stored yet. But **pushing
+publishes history** — a key committed earlier leaks as-is. So backup scans **every
+tracked file** and refuses to upload if it finds a single secret.
 
 ```
 $ kigtit check
-  ●  위험한 파일이 없어요.          ← 담기지 않은 것만 봐서 놓친다
+  ●  위험한 파일이 없어요.          ← only looks at unstored changes, so it misses
 
 $ kigtit backup
   ▲ 백업을 멈췄어요
      config.js 1번째 줄에 OpenAI 키처럼 보이는 값이 있어요...
      sk-proj-••••••B4nM
-  한 번 올라간 키는 몇 분 안에 남이 긁어 갑니다. 먼저 .env로 옮겨 주세요.
 ```
 
-찾는 것: OpenAI, Anthropic, AWS, Google, GitHub, Slack, Stripe 키, 개인 키 파일,
-`api_key = "..."` 형태의 설정값.
+What it looks for: OpenAI, Anthropic, AWS, Google, GitHub, Slack and Stripe keys,
+private key files, and settings shaped like `api_key = "..."`.
 
----
+Fresh projects get their first branch from `init.defaultBranch`, falling back to
+`main`. git2's own default is still `master`, which would make branch names
+disagree at backup time.
 
-## 구조
+## Layout
 
 ```
-crates/core/     로직 전부. CLI와 데스크톱 앱이 공유한다.
-  repo.rs        폴더 열기 / 자동 .gitignore
-  save.rs        세이브 포인트 만들기
-  restore.rs     되돌리기 — 잃는 경로가 없는 방식
-  timeline.rs    타임라인 읽기
-  secrets.rs     비밀 키·대용량 파일 검사
-  ai.rs          로컬 AI CLI로 사람 말 요약
-  backup.rs      GitHub 백업 — gh를 빌려 쓴다
-  sync.rs        맞추기와 "선택이 필요해요"
-  health.rs      앱이 켜지는지 실제로 돌려 보기
-  tools.rs       PATH 없이도 외부 도구 찾기
-  notes.rs       나중에 붙이는 정보 (refs/notes/kigtit)
-  watch.rs       자동 저장 데몬
-crates/cli/      kigtit 바이너리
-src-tauri/       데스크톱 앱 백엔드. core를 감싸는 얇은 층이다.
-src/             React 화면
-design/          화면 설계 (screens.html) + 아이콘 생성기 (icon.py)
-demo/            README에 쓰는 GIF와 vhs 대본
+crates/core/     All the logic. The CLI and the desktop app share it.
+  repo.rs        Opening a folder / automatic .gitignore
+  save.rs        Creating save points
+  restore.rs     Undo — the way that loses nothing
+  timeline.rs    Reading the timeline
+  secrets.rs     Scanning for secret keys and large files
+  ai.rs          Plain-language summaries via a local AI CLI
+  backup.rs      GitHub backup — borrows gh
+  sync.rs        Reconciling, and "a choice is needed"
+  health.rs      Actually running the app to see if it starts
+  tools.rs       Finding external tools without relying on PATH
+  notes.rs       Information attached later (refs/notes/kigtit)
+  watch.rs       The autosave daemon
+crates/cli/      The kigtit binary
+src-tauri/       Desktop app backend. A thin layer over core.
+src/             React screens
+design/          Screen designs (screens.html) + the icon generator (icon.py)
+demo/            GIFs, screenshots, and the scripts that produce them
+docs/            This
 ```
 
-앱과 CLI가 `crates/core`를 그대로 공유하므로 동작이 갈라지지 않습니다.
+The app and the CLI share `crates/core` verbatim, so behaviour can't diverge.
 
-`git2::Repository`는 스레드 간에 넘길 수 없어서 상태로 들고 있지 않습니다.
-명령마다 경로로 다시 여는데 그 비용은 밀리초 단위입니다.
-
-### 만들면서
-
-```sh
-cargo test -p kigtit-core        # 유닛 테스트
-cargo clippy                     # 린트
-cargo tauri dev                  # 앱을 개발 모드로
-pnpm build                       # 프런트엔드만
-```
-
-`cargo run`으로 앱을 직접 띄우면 빈 창이 뜹니다 — debug 빌드의 Tauri는
-`devUrl`(localhost:1420)을 보기 때문입니다. `cargo tauri dev`를 쓰거나 release로
-구워야 임베드된 화면을 씁니다.
-
-DMG 굽기는 Finder 권한이 필요해서 기본 대상에서 뺐습니다. 필요하면
-`src-tauri/tauri.conf.json`의 `bundle.targets`에 `"dmg"`를 넣으세요.
-
-GIF는 [vhs](https://github.com/charmbracelet/vhs)로 만듭니다.
-
-```sh
-brew install vhs
-cd demo && ./record.sh
-```
-
----
-
-## 아직 없는 것
-
-- **히스토리에서 지워진 키는 검사하지 못합니다.** 지금 트리에 있는 것만 잡습니다.
-- 충돌 선택은 파일 단위입니다. "양쪽 다 조금씩 남기기"는 할 수 없습니다.
-- 여러 사람이 같이 쓰는 경우는 아직 생각하지 않았습니다. 혼자 여러 기기를 쓰는
-  경우까지만 다룹니다.
-- macOS만 됩니다. 코어는 플랫폼을 가리지 않지만 `tools.rs`의 후보 경로와
-  `kigtit open`이 macOS 기준입니다.
-- **실제 비개발자에게 써보게 한 적이 아직 없습니다.** 위 페인포인트는 전부
-  가설입니다.
-
-## 라이선스
-
-MIT
+`git2::Repository` can't be moved across threads, so it isn't held in state. Every
+command reopens by path, which costs milliseconds.

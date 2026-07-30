@@ -1,0 +1,45 @@
+name: The wording confused me
+description: A message was unclear, frightening, or used developer vocabulary
+labels: [wording]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        이건 버그입니다. 이 제품 전체가 "깃 용어 없이 문장으로 말한다"는
+        하나의 가정 위에 서 있어서, 문구가 안 통하면 제품이 안 통한 것입니다.
+
+        This is a bug. The whole product rests on one bet — that plain sentences
+        beat Git vocabulary. If the wording didn't land, the product didn't.
+
+  - type: textarea
+    id: text
+    attributes:
+      label: The exact text
+      description: Copy it, or attach a screenshot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you thought it meant
+      description: Or what you expected to happen after reading it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: better
+    attributes:
+      label: What would have been clearer
+      description: A rough suggestion is plenty. You don't need the perfect sentence.
+
+  - type: dropdown
+    id: who
+    attributes:
+      label: Roughly, how much do you code?
+      description: Helps us know who the wording is failing.
+      options:
+        - I don't code
+        - I build things with AI but don't read code
+        - I code, but Git still trips me up
+        - I'm comfortable with Git
