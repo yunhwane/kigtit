@@ -1,0 +1,20 @@
+# Kigtit이 자동으로 넣은 목록입니다. 백업에서 제외됩니다.
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+dist/
+build/
+.next/
+.nuxt/
+out/
+target/
+__pycache__/
+.venv/
+venv/
+*.log
+.pnpm-store/
+.turbo/
+.cache/
+coverage/

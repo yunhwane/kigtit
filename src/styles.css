@@ -1,0 +1,720 @@
+/* ── 토큰 ──────────────────────────────────────────────────
+   design/screens.html 에서 정한 팔레트를 그대로 옮겼다.
+   자주색 계열 강조 + 모든 중성색에 옅은 마젠타 편향.
+   상태색(ok/bad/warn)은 강조색과 별개다.
+   ───────────────────────────────────────────────────────── */
+:root {
+  --ground: #faf7f8;
+  --surface: #ffffff;
+  --surface-2: #f3eef0;
+  --surface-3: #ebe3e7;
+  --line: #e4dcdf;
+  --line-strong: #d2c6cc;
+  --ink: #221a20;
+  --ink-2: #6b5f66;
+  --ink-3: #9a8e94;
+  --accent: #6b2d5c;
+  --accent-ink: #ffffff;
+  --accent-soft: #f0e4ec;
+  --ok: #2f6b4f;
+  --ok-soft: #e3f0e9;
+  --bad: #a93a2e;
+  --bad-soft: #f8e6e3;
+  --warn: #8a5f16;
+  --warn-soft: #f8eedc;
+  --scrim: rgba(34, 26, 32, 0.42);
+  --shadow: 0 1px 2px rgba(34, 26, 32, 0.06), 0 12px 32px -12px rgba(34, 26, 32, 0.18);
+  --radius: 10px;
+
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
+    system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #171316;
+    --surface: #1f1a1e;
+    --surface-2: #261f25;
+    --surface-3: #2f262e;
+    --line: #372e36;
+    --line-strong: #493c46;
+    --ink: #f2ebef;
+    --ink-2: #a99da5;
+    --ink-3: #786d75;
+    --accent: #c98bb6;
+    --accent-ink: #1b1119;
+    --accent-soft: #33222e;
+    --ok: #7dc5a0;
+    --ok-soft: #1d2e26;
+    --bad: #e39288;
+    --bad-soft: #33211e;
+    --warn: #d6ae6a;
+    --warn-soft: #302719;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+code {
+  font-family: var(--mono);
+}
+
+/* ── 창 골격 ──────────────────────────────────────────── */
+.app {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr) 340px;
+  height: 100vh;
+}
+.app.solo {
+  grid-template-columns: 1fr;
+}
+
+/* macOS 신호등 버튼 자리를 비워둔다. */
+.drag {
+  height: 30px;
+  -webkit-app-region: drag;
+}
+
+/* ── 왼쪽 레일 ────────────────────────────────────────── */
+.rail {
+  background: var(--surface-2);
+  border-right: 1px solid var(--line);
+  padding: 0 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+.rail-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 4px 8px 8px;
+}
+.proj {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 0;
+  background: none;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  overflow: hidden;
+}
+.proj span.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj:hover {
+  background: var(--surface-3);
+}
+.proj.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ink-3);
+  flex-shrink: 0;
+}
+.proj.active .swatch {
+  background: var(--accent);
+}
+.rail-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.agent-note {
+  font-size: 11px;
+  color: var(--ink-3);
+  padding: 0 8px;
+  line-height: 1.45;
+}
+
+/* ── 타임라인 ─────────────────────────────────────────── */
+.stream {
+  padding: 0 22px 32px;
+  overflow-y: auto;
+}
+.stream-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 18px;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+.stream-head h2 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.stream-head .sub {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+.autosave {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pulse {
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+/* 세로 레일과 노드. 노드 하나 = 내가 시킨 일 한 번. */
+.ev {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 14px;
+}
+.gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.node {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  margin-top: 15px;
+  background: var(--surface);
+  border: 2.5px solid var(--line-strong);
+  flex-shrink: 0;
+  z-index: 1;
+}
+.stem {
+  width: 2px;
+  flex: 1;
+  background: var(--line);
+  min-height: 12px;
+}
+.ev:last-child .stem {
+  background: linear-gradient(var(--line), transparent);
+}
+.ev[data-state="ok"] .node {
+  border-color: var(--ok);
+}
+.ev[data-state="broken"] .node {
+  border-color: var(--bad);
+}
+.ev[data-state="now"] .node {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.card {
+  text-align: left;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.card:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.card[aria-current="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--surface);
+}
+.card:focus-visible,
+.btn:focus-visible,
+.proj:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.card.now {
+  border-style: dashed;
+  cursor: default;
+}
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.time {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.card h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.card p {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.card p.waiting {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.card .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-actions {
+  display: flex;
+  gap: 7px;
+  margin: 0 0 10px;
+  flex-wrap: wrap;
+}
+
+/* ── 칩 ───────────────────────────────────────────────── */
+.chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.chip.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.chip.broken {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.chip.unknown {
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+.chip.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.chip.accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip .glyph {
+  font-size: 8px;
+}
+
+/* ── 버튼 ─────────────────────────────────────────────── */
+.btn {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--ink-3);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  background: var(--accent);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+.btn.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.btn.danger {
+  border-color: var(--bad);
+  color: var(--bad);
+  background: transparent;
+}
+.btn.danger:hover:not(:disabled) {
+  background: var(--bad-soft);
+}
+.btn.wide {
+  width: 100%;
+}
+.btn.sm {
+  font-size: 11.5px;
+  padding: 4px 9px;
+}
+
+/* ── 오른쪽 상세 ──────────────────────────────────────── */
+.detail {
+  border-left: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 0 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.detail-head h3 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.summary p {
+  font-size: 13.5px;
+  user-select: text;
+}
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--line);
+}
+.file {
+  background: var(--surface);
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file code {
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+.file .k {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.plusminus {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.plusminus .p {
+  color: var(--ok);
+}
+.plusminus .m {
+  color: var(--bad);
+}
+.empty {
+  color: var(--ink-3);
+  font-size: 13px;
+  text-align: center;
+  padding: 32px 12px;
+}
+
+/* ── 코드로 보기 ──────────────────────────────────────── */
+pre.patch {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow: auto;
+  max-height: 300px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 0;
+  user-select: text;
+}
+pre.patch span {
+  display: block;
+  padding: 0 12px;
+  white-space: pre;
+}
+pre.patch span.add {
+  background: var(--ok-soft);
+}
+pre.patch span.del {
+  background: var(--bad-soft);
+}
+pre.patch span.hunk {
+  color: var(--ink-3);
+}
+
+/* ── 겹치는 화면 ──────────────────────────────────────── */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  z-index: 10;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  max-width: 460px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.modal h3 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.modal p {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.modal p b {
+  color: var(--ink);
+}
+/* 되돌리기 확인창의 핵심. 이 한 줄이 버튼을 누르게 만든다. */
+.reassure {
+  display: flex;
+  gap: 10px;
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  width: 100%;
+}
+.reassure.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: 2px;
+}
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.finding {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.finding code {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  user-select: text;
+}
+
+/* ── 첫 화면 ──────────────────────────────────────────── */
+.onboard {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 32px;
+  text-align: center;
+}
+.dropzone {
+  border: 2px dashed var(--line-strong);
+  border-radius: 16px;
+  padding: 40px 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-2);
+  max-width: 460px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.dropzone .glyph {
+  font-size: 30px;
+}
+.dropzone h2 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dropzone p {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  max-width: 34ch;
+}
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 460px;
+}
+.recent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+}
+.recent-row:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.recent-row .when {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* ── 알림 ─────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--ground);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  z-index: 20;
+  max-width: 80vw;
+  text-align: center;
+}
