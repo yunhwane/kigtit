@@ -7,10 +7,24 @@ interface Props {
   onMark: (id: string, health: Health) => void;
   onSummarize: (id: string) => void;
   summarizing: boolean;
+  /** 앱이 켜지는지 지금 확인한다. 빌드를 돌리므로 오래 걸릴 수 있다. */
+  onCheck: () => void;
+  checking: boolean;
+  /** 이 프로젝트를 무엇으로 확인하는지, 또는 왜 확인할 수 없는지. */
+  probe: string | null;
 }
 
 /** 오른쪽 패널. 사람 말이 위, 코드는 접혀 있고 원할 때만 펼친다. */
-export function Detail({ point, onRestore, onMark, onSummarize, summarizing }: Props) {
+export function Detail({
+  point,
+  onRestore,
+  onMark,
+  onSummarize,
+  summarizing,
+  onCheck,
+  checking,
+  probe,
+}: Props) {
   const [patch, setPatch] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,8 +51,17 @@ export function Detail({ point, onRestore, onMark, onSummarize, summarizing }: P
         <h3>{point.title}</h3>
         <span className="time">
           {point.at_label} · 파일 {point.files.length}개 · {point.id}
+          {point.checked_by && ` · ${point.checked_by}`}
         </span>
       </div>
+
+      {/* 안 켜지는 이유. 사용자가 실제로 알아야 하는 유일한 기술적 정보다. */}
+      {point.broke_because && (
+        <div className="broke">
+          <span className="tag">왜 안 켜지나</span>
+          <pre>{point.broke_because}</pre>
+        </div>
+      )}
 
       <div className="summary">
         <span className="tag">무엇이 바뀌었나</span>
@@ -82,6 +105,12 @@ export function Detail({ point, onRestore, onMark, onSummarize, summarizing }: P
       ) : (
         <Patch text={patch} />
       )}
+
+      {/* 판정은 자동으로 돈다. 이 버튼은 지금 당장 다시 보고 싶을 때만 쓴다. */}
+      <button className="btn wide" onClick={onCheck} disabled={checking}>
+        {checking ? "확인하는 중…" : "앱이 켜지는지 지금 확인"}
+      </button>
+      {probe && <p className="probe">{probe}</p>}
 
       <div className="row-actions">
         <button

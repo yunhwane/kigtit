@@ -74,6 +74,34 @@ pub fn scan_pending(project: &Project) -> Result<Vec<Finding>> {
     Ok(scan_paths(project, &paths))
 }
 
+/// 백업 전에 쓰는 검사. 담기지 않은 변경 + **이미 담긴 모든 파일**을 본다.
+///
+/// push는 히스토리를 공개한다. 아직 담기지 않은 것만 보면, 이미 커밋된 키가
+/// 그대로 새어 나간다.
+pub fn scan_tracked(project: &Project) -> Result<Vec<Finding>> {
+    let mut paths: Vec<String> = crate::timeline::uncommitted(project)?
+        .into_iter()
+        .filter(|f| f.kind != "삭제")
+        .map(|f| f.path)
+        .collect();
+
+    if let Some(head) = project.head_commit() {
+        let tree = head.tree()?;
+        tree.walk(git2::TreeWalkMode::PreOrder, |dir, entry| {
+            if entry.kind() == Some(git2::ObjectType::Blob) {
+                if let Some(name) = entry.name() {
+                    paths.push(format!("{dir}{name}"));
+                }
+            }
+            git2::TreeWalkResult::Ok
+        })?;
+    }
+
+    paths.sort();
+    paths.dedup();
+    Ok(scan_paths(project, &paths))
+}
+
 pub fn scan_paths(project: &Project, rel_paths: &[String]) -> Vec<Finding> {
     let pats = patterns();
     let mut out = Vec::new();

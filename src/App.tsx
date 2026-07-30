@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import {
   api,
   onWatch,
+  type Conflict,
   type Finding,
   type Health,
   type ProjectInfo,
@@ -13,6 +14,8 @@ import {
 import { Detail } from "./Detail";
 import { Onboarding } from "./Onboarding";
 import { Timeline } from "./Timeline";
+import { Backup } from "./Backup";
+import { ConflictChoice } from "./Conflict";
 
 export function App() {
   const [project, setProject] = useState<ProjectInfo | null>(null);
@@ -22,6 +25,11 @@ export function App() {
   const [revertTo, setRevertTo] = useState<SavePoint | null>(null);
   const [blocked, setBlocked] = useState<Finding[] | null>(null);
   const [summarizing, setSummarizing] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [probe, setProbe] = useState<string | null>(null);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [conflicts, setConflicts] = useState<Conflict[] | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [activity, setActivity] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -49,6 +57,7 @@ export function App() {
         setBlocked(null);
         await refresh();
         api.recent().then(setRecents).catch(() => {});
+        api.healthProbe().then(setProbe).catch(() => setProbe(null));
       } catch (e) {
         say(String(e));
       }
@@ -72,8 +81,13 @@ export function App() {
     return onWatch({
       changed: (files) => setActivity(`파일 ${files}개 바뀜 — 곧 담아요`),
       saved: (point) => {
-        setActivity(null);
+        setActivity("앱이 켜지는지 확인하는 중…");
         say(`담았어요 · ${point.title}`);
+        refresh();
+      },
+      checked: (_id, outcome) => {
+        setActivity(null);
+        if (outcome.health === "broken") say(`앱이 안 켜져요 — ${outcome.how}`);
         refresh();
       },
       blocked: (findings) => {
@@ -81,6 +95,7 @@ export function App() {
         setBlocked(findings);
       },
       summarized: () => refresh(),
+      resuming: (count) => say(`꺼져 있는 동안 놓친 요약 ${count}개를 이어서 채워요.`),
     });
   }, [refresh, say]);
 
@@ -122,6 +137,54 @@ export function App() {
       say(String(e));
     } finally {
       setSummarizing(null);
+    }
+  }
+
+  async function runCheck() {
+    setChecking(true);
+    try {
+      const outcome = await api.checkHealth();
+      await refresh();
+      say(
+        outcome.health === "ok"
+          ? `앱이 잘 켜져요 · ${outcome.how}`
+          : outcome.health === "broken"
+            ? `앱이 안 켜져요 · ${outcome.how}`
+            : outcome.how,
+      );
+    } catch (e) {
+      say(String(e));
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function runSync() {
+    setSyncing(true);
+    try {
+      const out = await api.sync();
+      switch (out.kind) {
+        case "noRemote":
+          say("아직 연결된 GitHub이 없어요. 먼저 백업해 주세요.");
+          break;
+        case "upToDate":
+          say("이미 같아요.");
+          break;
+        case "pulled":
+          say(`GitHub 쪽 세이브 포인트 ${out.count}개를 가져왔어요.`);
+          break;
+        case "merged":
+          say(`겹치는 파일이 없어서 알아서 합쳤어요. ${out.count}개 반영.`);
+          break;
+        case "needsChoice":
+          setConflicts(out.conflicts);
+          break;
+      }
+      await refresh();
+    } catch (e) {
+      say(String(e));
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -178,6 +241,12 @@ export function App() {
             >
               ＋ 폴더 열기
             </button>
+            <button className="btn ghost sm wide" onClick={() => setBackupOpen(true)}>
+              GitHub에 백업
+            </button>
+            <button className="btn ghost sm wide" onClick={runSync} disabled={syncing}>
+              {syncing ? "맞추는 중…" : "GitHub와 맞추기"}
+            </button>
             <button
               className="btn ghost sm wide"
               onClick={async () => {
@@ -211,8 +280,24 @@ export function App() {
           onMark={mark}
           onSummarize={summarize}
           summarizing={summarizing === point?.full_id}
+          onCheck={runCheck}
+          checking={checking}
+          probe={probe}
         />
       </div>
+
+      {backupOpen && (
+        <Backup onClose={() => setBackupOpen(false)} onDone={say} />
+      )}
+
+      {conflicts && conflicts.length > 0 && (
+        <ConflictChoice
+          conflicts={conflicts}
+          onClose={() => setConflicts(null)}
+          onDone={refresh}
+          say={say}
+        />
+      )}
 
       {revertTo && (
         <div className="scrim" onClick={() => setRevertTo(null)}>

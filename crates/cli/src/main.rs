@@ -77,6 +77,21 @@ enum Cmd {
         #[arg(long, default_value_t = 20)]
         limit: usize,
     },
+    /// GitHub에 백업한다 (기본: 비공개)
+    Backup {
+        /// 누구나 볼 수 있게 만든다
+        #[arg(long)]
+        public: bool,
+        /// 올리지 않고 지금 상태만 본다
+        #[arg(long)]
+        status: bool,
+    },
+    /// GitHub 쪽 변경을 가져와 맞춘다
+    Sync {
+        /// 겹치는 파일을 한쪽으로 몰아서 정리한다
+        #[arg(long, value_parser = ["mine", "theirs"])]
+        keep: Option<String>,
+    },
     /// 이 폴더를 Kigtit 창으로 연다
     Open,
     /// 폴더를 지켜보며 조용해질 때마다 알아서 저장한다
@@ -110,10 +125,144 @@ fn run() -> Result<()> {
         Some(Cmd::Health) => cmd_health(&project),
         Some(Cmd::Mark { state, id }) => cmd_mark(&project, &state, id),
         Some(Cmd::Summarize { limit }) => cmd_summarize(&project, limit),
+        Some(Cmd::Backup { public, status }) => cmd_backup(&project, public, status),
+        Some(Cmd::Sync { keep }) => cmd_sync(&project, keep),
         Some(Cmd::Open) => cmd_open(&project.root),
         // watch는 자기 Project를 직접 열어 오래 돌아간다.
         Some(Cmd::Watch { idle }) => cmd_watch(&dir, idle),
     }
+}
+
+// ── GitHub 백업 ───────────────────────────────────────────
+
+fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> {
+    use kigtit_core::backup::{self, Readiness};
+
+    let status = backup::status(project);
+    println!();
+    match &status.readiness {
+        Readiness::Ready { account } => {
+            println!("  \x1b[32m●\x1b[0m  {account} 계정으로 올릴 수 있어요")
+        }
+        Readiness::NotSignedIn => {
+            println!("  \x1b[33m▲\x1b[0m  GitHub 로그인이 필요해요");
+            println!("     \x1b[2m터미널에서 `gh auth login`을 한 번 해 주세요.\x1b[0m\n");
+            return Ok(());
+        }
+        Readiness::NoTool => {
+            println!("  \x1b[33m▲\x1b[0m  GitHub에 올리려면 gh가 필요해요");
+            println!("     \x1b[2m`brew install gh` 뒤에 `gh auth login`을 해 주세요.\x1b[0m\n");
+            return Ok(());
+        }
+    }
+
+    match &status.remote {
+        Some(url) => println!("     \x1b[2m{url}\x1b[0m"),
+        None => println!("     \x1b[2m아직 연결된 곳이 없어요. 새로 만들어 드릴게요.\x1b[0m"),
+    }
+    println!(
+        "     \x1b[2m백업 안 된 세이브 포인트 {}개\x1b[0m",
+        status.unbacked
+    );
+
+    if status_only {
+        println!();
+        return Ok(());
+    }
+    if status.unbacked == 0 && status.remote.is_some() {
+        println!("\n  이미 전부 백업돼 있어요.\n");
+        return Ok(());
+    }
+
+    // 올리기 전에 관문을 먼저 통과해야 한다. push는 되돌릴 수 없다.
+    let blocking = backup::guard(project)?;
+    if !blocking.is_empty() {
+        println!("\n  \x1b[33m▲ 백업을 멈췄어요\x1b[0m");
+        for f in &blocking {
+            println!("     {}", f.message);
+            if let Some(m) = &f.masked {
+                println!("     \x1b[2m{m}\x1b[0m");
+            }
+        }
+        println!(
+            "\n  \x1b[2m한 번 올라간 키는 몇 분 안에 남이 긁어 갑니다. 먼저 .env로 옮겨 주세요.\x1b[0m\n"
+        );
+        return Ok(());
+    }
+
+    if public {
+        println!("\n  \x1b[33m▲\x1b[0m  \x1b[1m누구나 볼 수 있게\x1b[0m 올립니다.");
+    } else {
+        println!("\n  \x1b[2m나만 볼 수 있게 올립니다.\x1b[0m");
+    }
+    println!("  \x1b[2m올리는 중…\x1b[0m");
+
+    let done = backup::run(project, !public)?;
+    println!(
+        "  \x1b[32m●\x1b[0m  백업했어요 — 세이브 포인트 {}개\n     \x1b[2m{}\x1b[0m",
+        done.backed_up, done.remote
+    );
+    if done.created {
+        println!("     \x1b[2m저장소를 새로 만들었어요.\x1b[0m");
+    }
+    println!();
+    Ok(())
+}
+
+// ── 맞추기 ────────────────────────────────────────────────
+
+fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
+    use kigtit_core::sync::{self, Outcome, Side};
+
+    println!("\n  \x1b[2mGitHub 쪽을 확인하는 중…\x1b[0m");
+    match sync::sync(project)? {
+        Outcome::NoRemote => {
+            println!("  아직 연결된 GitHub이 없어요.");
+            println!("  \x1b[2m`kigtit backup`으로 먼저 백업해 주세요.\x1b[0m\n");
+        }
+        Outcome::UpToDate => println!("  \x1b[32m●\x1b[0m  이미 같아요.\n"),
+        Outcome::Pulled { count } => println!(
+            "  \x1b[32m●\x1b[0m  GitHub 쪽 세이브 포인트 {count}개를 가져왔어요.\n"
+        ),
+        Outcome::Merged { count } => println!(
+            "  \x1b[32m●\x1b[0m  겹치는 파일이 없어서 알아서 합쳤어요. GitHub 쪽 {count}개 반영.\n"
+        ),
+        Outcome::NeedsChoice { conflicts } => {
+            let Some(side) = keep.as_deref() else {
+                println!(
+                    "\n  \x1b[33m▲ 선택이 필요해요\x1b[0m — 아래 파일을 양쪽에서 같이 고쳤어요."
+                );
+                println!("  \x1b[2m작업 폴더는 아직 그대로입니다. 아무것도 잃지 않았어요.\x1b[0m\n");
+                for c in &conflicts {
+                    let note = if c.mine_deleted {
+                        "  \x1b[2m(내 쪽에서는 지웠어요)\x1b[0m"
+                    } else if c.theirs_deleted {
+                        "  \x1b[2m(GitHub 쪽에서는 지웠어요)\x1b[0m"
+                    } else {
+                        ""
+                    };
+                    println!("    \x1b[33m▲\x1b[0m {}{}", c.path, note);
+                }
+                println!(
+                    "\n  \x1b[2m어느 쪽을 남길지 고르세요:\x1b[0m\n    kigtit sync --keep mine    \x1b[2m내 컴퓨터에서 한 것을 남긴다\x1b[0m\n    kigtit sync --keep theirs  \x1b[2mGitHub에 있던 것을 남긴다\x1b[0m\n"
+                );
+                return Ok(());
+            };
+
+            let side = if side == "mine" { Side::Mine } else { Side::Theirs };
+            let choices: Vec<(String, Side)> =
+                conflicts.iter().map(|c| (c.path.clone(), side)).collect();
+            let sp = sync::resolve(project, &choices)?;
+            println!(
+                "  \x1b[32m●\x1b[0m  {}쪽으로 정리했어요 \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
+                if side == Side::Mine { "내 " } else { "GitHub " },
+                sp.id,
+                sp.title
+            );
+            println!("     \x1b[2m마음에 안 들면 `kigtit undo`로 되돌릴 수 있어요.\x1b[0m\n");
+        }
+    }
+    Ok(())
 }
 
 // ── 창 띄우기 ─────────────────────────────────────────────
@@ -182,6 +331,9 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
                     "  \x1b[32m●\x1b[0m  담았어요  \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
                     sp.id, sp.title
                 );
+            }
+            Event::Resuming { count } => {
+                println!("  \x1b[2m↻\x1b[0m  \x1b[2m꺼져 있는 동안 놓친 요약 {count}개를 이어서 채워요\x1b[0m");
             }
             Event::Checked { outcome, .. } => {
                 let color = match outcome.health {
@@ -415,7 +567,7 @@ fn cmd_show(project: &Project, id: Option<String>, code: bool) -> Result<()> {
     println!("\n  \x1b[1m{}\x1b[0m  \x1b[2m{} · {}\x1b[0m", sp.title, sp.at_label, sp.id);
     if let Some(how) = &sp.checked_by {
         println!(
-            "  {}  \x1b[2m{} — {}으로 확인\x1b[0m",
+            "  {}  \x1b[2m{} · 확인: {}\x1b[0m",
             sp.health.glyph(),
             sp.health.label(),
             how
@@ -537,7 +689,8 @@ fn cmd_health(project: &Project) -> Result<()> {
     use kigtit_core::health;
 
     match health::detect(&project.root) {
-        Ok(probe) => println!("\n  \x1b[2m{}으로 확인하는 중…\x1b[0m", probe.label),
+        // 조사(으로/로)는 라벨 끝글자에 따라 갈리므로 아예 쓰지 않는다.
+        Ok(probe) => println!("\n  \x1b[2m확인하는 중… ({})\x1b[0m", probe.label),
         Err(why) => println!("\n  \x1b[2m{why}\x1b[0m"),
     }
 

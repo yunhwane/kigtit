@@ -35,7 +35,14 @@ pub enum Event {
         id: String,
         outcome: health::Outcome,
     },
+    /// 꺼져 있는 동안 놓친 요약을 이어서 채우기 시작했다.
+    Resuming { count: usize },
 }
+
+/// 다시 켤 때 요약을 이어 채울 범위. 최근 이만큼만 훑는다.
+const RESUME_SCAN: usize = 40;
+/// 한 번에 이어 채울 최대 개수. 요약 하나에 8초쯤 걸리므로 무한정 돌리지 않는다.
+const RESUME_LIMIT: usize = 8;
 
 /// 파일 변경 후 이만큼 조용하면 담는다.
 pub const DEFAULT_IDLE: Duration = Duration::from_secs(3);
@@ -93,6 +100,15 @@ pub fn watch(
     // 파일 변경을 계속 받아들인다.
     let (sum_tx, sum_rx) = mpsc::channel::<(String, ai::Summary)>();
     let (chk_tx, chk_res) = spawn_checker(root.clone());
+
+    // 앱을 강제로 끄면 진행 중이던 요약이 같이 죽는다. 대기열을 따로 파일로
+    // 두지는 않는다 — **요약이 없는 세이브 포인트 자체가 대기열**이고, 그건
+    // 이미 git에 남아 있다. 파일로 두면 손상되거나 실제 상태와 어긋날 뿐이다.
+    let missed = resume_pending(root.clone(), sum_tx.clone());
+    if missed > 0 {
+        on_event(Event::Resuming { count: missed });
+    }
+
     let mut dirty_since: Option<Instant> = None;
 
     loop {
@@ -161,6 +177,48 @@ pub fn watch(
     }
 
     Ok(())
+}
+
+/// 꺼져 있는 동안 놓친 요약을 이어서 채운다. 채울 개수를 바로 돌려준다.
+///
+/// 요약 자체는 별 스레드에서 이어지므로 감시 시작을 붙잡지 않는다.
+fn resume_pending(root: PathBuf, tx: mpsc::Sender<(String, ai::Summary)>) -> usize {
+    let Ok(project) = Project::open(&root) else {
+        return 0;
+    };
+    let agent = ai::detect();
+    if agent == ai::Agent::Rules {
+        // 규칙 기반 요약은 언제든 즉시 만들 수 있으니 굳이 몰아서 채우지 않는다.
+        return 0;
+    }
+
+    // 최근 것이 사용자에게 더 쓸모 있으므로 최근 순으로 고르고,
+    // 처리는 오래된 것부터 해서 타임라인이 아래에서 위로 채워지게 한다.
+    let mut pending: Vec<String> = crate::timeline::list(&project, RESUME_SCAN)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|sp| sp.pending_summary)
+        .map(|sp| sp.full_id)
+        .take(RESUME_LIMIT)
+        .collect();
+    pending.reverse();
+
+    let count = pending.len();
+    if count == 0 {
+        return 0;
+    }
+
+    std::thread::spawn(move || {
+        let Ok(project) = Project::open(&root) else {
+            return;
+        };
+        for id in pending {
+            if let Ok(summary) = ai::summarize_save_point(&project, &id, agent) {
+                let _ = tx.send((id, summary));
+            }
+        }
+    });
+    count
 }
 
 /// "앱이 켜지는가"를 확인하는 스레드 하나.

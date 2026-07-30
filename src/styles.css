@@ -328,6 +328,52 @@ code {
   color: var(--ink-3);
   font-style: italic;
 }
+/* 깨진 이유 한 줄. 카드 안에서만 쓰는 좁은 표시. */
+.why {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-radius: 6px;
+  padding: 6px 9px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+
+/* 상세 패널의 전체 이유. */
+.broke {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--bad-soft);
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+  padding: 12px 13px;
+}
+.broke .tag {
+  color: var(--bad);
+}
+.broke pre {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow-y: auto;
+  user-select: text;
+}
+
+.probe {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
 .card .meta {
   font-family: var(--mono);
   font-size: 11px;
@@ -601,6 +647,20 @@ pre.patch span.hunk {
   background: var(--warn-soft);
   color: var(--warn);
 }
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.choice input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
 .modal-actions {
   display: flex;
   gap: 8px;
@@ -717,4 +777,82 @@ pre.patch span.hunk {
   z-index: 20;
   max-width: 80vw;
   text-align: center;
+}
+
+/* ── 선택이 필요해요 ─────────────────────────────────────
+   양쪽을 나란히 놓고 고르게 한다. 고른 쪽만 색으로 확실히 구분하고,
+   설명이 카드의 본문이다 — 파일 이름이 아니라 설명을 읽고 고른다.
+   ───────────────────────────────────────────────────────── */
+.modal.wide {
+  max-width: 680px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cpath {
+  font-size: 12px;
+  color: var(--ink-2);
+  user-select: text;
+}
+.sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .sides {
+    grid-template-columns: 1fr;
+  }
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.side:hover {
+  border-color: var(--line-strong);
+}
+.side.picked {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.side:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.side-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+.side.picked .side-label {
+  color: var(--accent);
+}
+/* 고른 쪽을 색만으로 말하지 않는다. */
+.side.picked .side-label::before {
+  content: "✓ ";
+}
+.side-why {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.5;
 }

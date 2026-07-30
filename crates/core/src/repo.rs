@@ -48,8 +48,14 @@ impl Project {
 
         let repo = match Repository::discover(&root) {
             Ok(r) => r,
-            Err(_) => Repository::init(&root)
-                .with_context(|| format!("프로젝트를 준비하지 못했어요: {}", root.display()))?,
+            Err(_) => {
+                // git2의 기본값은 여전히 master다. 사용자 설정과 GitHub 기본값을
+                // 따라야 나중에 백업할 때 갈래 이름이 어긋나지 않는다.
+                let mut opts = git2::RepositoryInitOptions::new();
+                opts.initial_head(&default_branch());
+                Repository::init_opts(&root, &opts)
+                    .with_context(|| format!("프로젝트를 준비하지 못했어요: {}", root.display()))?
+            }
         };
 
         // workdir()은 끝에 구분자를 붙여 준다. 최근 목록에서 같은 폴더가
@@ -140,4 +146,14 @@ impl Project {
 
 fn ignores(body: &str, line: &str) -> bool {
     body.lines().any(|l| l.trim() == line)
+}
+
+/// 새 프로젝트의 첫 갈래 이름. 사용자 설정을 따르고, 없으면 main.
+fn default_branch() -> String {
+    git2::Config::open_default()
+        .ok()
+        .and_then(|cfg| cfg.get_string("init.defaultBranch").ok())
+        .map(|name| name.trim().to_string())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "main".to_string())
 }

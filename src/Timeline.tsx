@@ -110,7 +110,7 @@ function Event({
         <button className="card" aria-current={selected} onClick={onSelect}>
           <div className="card-top">
             <span className="time">{sp.at_label}</span>
-            <span className={`chip ${sp.health}`}>
+            <span className={`chip ${sp.health}`} title={sp.checked_by ?? undefined}>
               <span className="glyph">{HEALTH_GLYPH[sp.health]}</span>
               {sp.health === "unknown" ? kindLabel(sp) : HEALTH_LABEL[sp.health]}
             </span>
@@ -125,6 +125,11 @@ function Event({
             파일 {sp.files.length}개 · {kindLabel(sp)}
           </span>
         </button>
+
+        {/* 왜 안 켜지는지 첫 줄만. 전체는 오른쪽 패널에서 본다. */}
+        {sp.broke_because && (
+          <p className="why">{sp.broke_because.split("\n")[0].trim()}</p>
+        )}
 
         {safe && (
           <div className="row-actions">

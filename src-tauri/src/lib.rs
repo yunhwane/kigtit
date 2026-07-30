@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use kigtit_core::{
-    Project, ai, notes, restore, save, secrets, timeline,
+    Project, ai, backup, health, notes, restore, save, secrets, sync, timeline,
     watch::{self, Event as WatchEvent},
 };
 use serde::{Deserialize, Serialize};
@@ -213,6 +213,75 @@ fn summarize(id: String, state: State<App>) -> Result<ai::Summary, String> {
     ai::summarize_save_point(&project, &id, ai::detect()).map_err(err)
 }
 
+/// 앱이 켜지는지 지금 확인한다. 빌드를 돌리므로 오래 걸릴 수 있다.
+#[tauri::command]
+fn check_health(state: State<App>) -> Result<health::Outcome, String> {
+    let project = state.project()?;
+    health::check_and_mark(&project, "HEAD").map_err(err)
+}
+
+// ── GitHub 백업 ───────────────────────────────────────────
+
+/// 백업 상태. 네트워크를 타지 않으므로 화면을 그릴 때 바로 부른다.
+#[tauri::command]
+fn backup_status(state: State<App>) -> Result<backup::Status, String> {
+    let project = state.project()?;
+    Ok(backup::status(&project))
+}
+
+/// 올리기 전에 비밀 키를 검사한다. **이미 담긴 파일까지** 본다.
+#[tauri::command]
+fn backup_guard(state: State<App>) -> Result<Vec<secrets::Finding>, String> {
+    let project = state.project()?;
+    backup::guard(&project).map_err(err)
+}
+
+/// GitHub에 올린다. `private`는 프런트엔드가 반드시 정해서 보낸다.
+#[tauri::command]
+fn backup_run(private: bool, state: State<App>) -> Result<backup::Done, String> {
+    let project = state.project()?;
+    backup::run(&project, private).map_err(err)
+}
+
+// ── 맞추기 ────────────────────────────────────────────────
+
+/// GitHub 쪽 변경을 가져온다. 겹치면 작업 폴더를 건드리지 않고 목록만 준다.
+#[tauri::command]
+fn sync_now(state: State<App>) -> Result<sync::Outcome, String> {
+    let project = state.project()?;
+    sync::sync(&project).map_err(err)
+}
+
+/// 파일마다 어느 쪽을 남길지 정해서 한 번에 적용한다.
+#[tauri::command]
+fn sync_resolve(
+    choices: Vec<(String, sync::Side)>,
+    state: State<App>,
+) -> Result<timeline::SavePoint, String> {
+    let project = state.project()?;
+    sync::resolve(&project, &choices).map_err(err)
+}
+
+/// 겹친 파일에서 양쪽이 뭘 하려 했는지 사람 말로 설명한다.
+///
+/// 충돌 화면의 핵심이다. 코드를 못 읽는 사람은 `<<<<<<< HEAD`를 봐도
+/// 고를 수가 없다. 무엇을 하려던 변경인지 알아야 고를 수 있다.
+#[tauri::command]
+fn sync_explain(path: String, state: State<App>) -> Result<sync::Explanation, String> {
+    let project = state.project()?;
+    sync::explain(&project, &path, ai::detect()).map_err(err)
+}
+
+/// 이 프로젝트를 어떻게 확인하는지. 확인할 방법이 없으면 그 이유.
+#[tauri::command]
+fn health_probe(state: State<App>) -> Result<String, String> {
+    let project = state.project()?;
+    Ok(match health::detect(&project.root) {
+        Ok(probe) => probe.label,
+        Err(why) => why,
+    })
+}
+
 // ── 자동 저장 ─────────────────────────────────────────────
 
 /// 새 프로젝트를 열 때마다 이전 감시를 내리고 새로 띄운다.
@@ -238,6 +307,12 @@ fn start_watch(app: &AppHandle, root: PathBuf, state: &State<App>) {
                 }
                 WatchEvent::Summarized { id, summary } => {
                     let _ = app.emit("kigtit:summarized", (id, summary));
+                }
+                WatchEvent::Checked { id, outcome } => {
+                    let _ = app.emit("kigtit:checked", (id, outcome));
+                }
+                WatchEvent::Resuming { count } => {
+                    let _ = app.emit("kigtit:resuming", count);
                 }
             });
         });
@@ -301,6 +376,14 @@ pub fn run() {
             mark,
             patch,
             summarize,
+            check_health,
+            health_probe,
+            backup_status,
+            backup_guard,
+            backup_run,
+            sync_now,
+            sync_resolve,
+            sync_explain,
         ])
         .run(tauri::generate_context!())
         .expect("Kigtit을 시작하지 못했어요.");

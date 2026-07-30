@@ -4,16 +4,20 @@
 //! 바깥으로 나가는 모든 문장은 한국어이고 git 용어를 쓰지 않는다.
 
 pub mod ai;
+pub mod backup;
 pub mod health;
 pub mod notes;
 pub mod repo;
 pub mod restore;
 pub mod save;
 pub mod secrets;
+pub mod sync;
 pub mod timeline;
+pub mod tools;
 pub mod watch;
 
 pub use ai::{Agent, Summary};
+pub use backup::Status as BackupStatus;
 pub use health::Outcome;
 pub use repo::Project;
 pub use restore::Restored;

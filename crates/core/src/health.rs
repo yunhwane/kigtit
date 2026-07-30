@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use crate::Result;
 use crate::notes::{self, Meta};
 use crate::repo::Project;
+use crate::tools;
 use crate::timeline::{self, Health};
 
 /// 이보다 오래 걸리면 판단을 포기한다. 빌드가 느린 프로젝트도 있다.
@@ -58,16 +59,20 @@ pub fn detect(root: &Path) -> std::result::Result<Probe, String> {
         return node_probe(root);
     }
     if root.join("Cargo.toml").is_file() {
+        let cargo = tools::resolve("cargo")
+            .ok_or_else(|| "cargo를 찾지 못해서 확인할 수 없어요".to_string())?;
         return Ok(Probe {
             label: "빌드 검사".into(),
-            program: "cargo".into(),
+            program: cargo.to_string_lossy().to_string(),
             args: vec!["check".into(), "--quiet".into()],
         });
     }
     if root.join("pyproject.toml").is_file() || has_ext(root, "py") {
+        let python = tools::resolve("python3")
+            .ok_or_else(|| "python3를 찾지 못해서 확인할 수 없어요".to_string())?;
         return Ok(Probe {
             label: "문법 검사".into(),
-            program: "python3".into(),
+            program: python.to_string_lossy().to_string(),
             args: vec!["-m".into(), "compileall".into(), "-q".into(), ".".into()],
         });
     }
@@ -86,7 +91,7 @@ fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
         serde_json::from_str(&body).map_err(|_| "package.json 형식이 깨졌어요".to_string())?;
     let scripts = json.get("scripts").and_then(|s| s.as_object());
 
-    let runner = runner_for(root);
+    let runner = runner_for(root)?;
 
     // build가 가장 넓게 잡는다. 타입 오류, 빠진 파일, 문법 오류가 여기서 걸린다.
     for name in ["build", "typecheck", "type-check", "tsc"] {
@@ -97,7 +102,7 @@ fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
                 } else {
                     "타입 검사".into()
                 },
-                program: runner.into(),
+                program: runner,
                 args: vec!["run".into(), name.into()],
             });
         }
@@ -106,26 +111,31 @@ fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
     if root.join("tsconfig.json").is_file() {
         return Ok(Probe {
             label: "타입 검사".into(),
-            program: runner.into(),
-            args: vec![
-                "exec".into(),
-                "tsc".into(),
-                "--noEmit".into(),
-            ],
+            program: runner,
+            args: vec!["exec".into(), "tsc".into(), "--noEmit".into()],
         });
     }
 
     Err("확인에 쓸 만한 명령을 찾지 못했어요".into())
 }
 
-fn runner_for(root: &Path) -> &'static str {
-    if root.join("pnpm-lock.yaml").is_file() {
+/// 잠금 파일이 가리키는 러너를 먼저 쓰되, 실제로 찾을 수 있는 것만 쓴다.
+/// Finder에서 켠 앱은 PATH가 빈약해서 `pnpm`이 없는 것처럼 보인다.
+fn runner_for(root: &Path) -> std::result::Result<String, String> {
+    let preferred = if root.join("pnpm-lock.yaml").is_file() {
         "pnpm"
     } else if root.join("yarn.lock").is_file() {
         "yarn"
     } else {
         "npm"
+    };
+
+    for candidate in [preferred, "npm", "pnpm", "yarn"] {
+        if let Some(path) = tools::resolve(candidate) {
+            return Ok(path.to_string_lossy().to_string());
+        }
     }
+    Err("npm이나 pnpm을 찾지 못해서 확인할 수 없어요".into())
 }
 
 fn has_ext(root: &Path, ext: &str) -> bool {

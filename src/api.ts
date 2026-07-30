@@ -20,6 +20,10 @@ export interface SavePoint {
   summary: string | null;
   kind: SaveKind;
   health: Health;
+  /** 무엇으로 확인했는지 ("앱 빌드", "타입 검사"). 미확인이면 null. */
+  checked_by: string | null;
+  /** 안 켜졌을 때 그 이유. 사용자에게 그대로 보여준다. */
+  broke_because: string | null;
   files: FileChange[];
   /** AI 요약이 아직 도착하지 않았다 → 카드에 "요약 중…"을 띄운다. */
   pending_summary: boolean;
@@ -72,6 +76,55 @@ export interface Summary {
   by: string;
 }
 
+export type Readiness =
+  | { state: "ready"; account: string }
+  | { state: "notSignedIn" }
+  | { state: "noTool" };
+
+export interface BackupStatus {
+  readiness: Readiness;
+  remote: string | null;
+  /** 아직 백업되지 않은 세이브 포인트 수. */
+  unbacked: number;
+  branch: string;
+}
+
+export interface BackupDone {
+  remote: string;
+  backed_up: number;
+  created: boolean;
+}
+
+export type Side = "mine" | "theirs";
+
+export interface Conflict {
+  path: string;
+  mine_deleted: boolean;
+  theirs_deleted: boolean;
+}
+
+export type SyncOutcome =
+  | { kind: "upToDate" }
+  | { kind: "pulled"; count: number }
+  | { kind: "merged"; count: number }
+  | { kind: "needsChoice"; conflicts: Conflict[] }
+  | { kind: "noRemote" };
+
+export interface Explanation {
+  path: string;
+  /** 내 컴퓨터에서 이 파일에 무엇을 했는지. */
+  mine: string;
+  /** GitHub 쪽에서 무엇을 했는지. */
+  theirs: string;
+}
+
+export interface Outcome {
+  health: Health;
+  /** 무엇으로 확인했는지. 판단 불가일 때는 왜 못 했는지. */
+  how: string;
+  detail: string | null;
+}
+
 export const api = {
   openProject: (path: string) => invoke<ProjectInfo>("open_project", { path }),
   recent: () => invoke<Recent[]>("recent"),
@@ -85,6 +138,14 @@ export const api = {
   mark: (id: string, health: Health) => invoke<SavePoint>("mark", { id, health }),
   patch: (id: string) => invoke<string>("patch", { id }),
   summarize: (id: string) => invoke<Summary>("summarize", { id }),
+  checkHealth: () => invoke<Outcome>("check_health"),
+  healthProbe: () => invoke<string>("health_probe"),
+  backupStatus: () => invoke<BackupStatus>("backup_status"),
+  backupGuard: () => invoke<Finding[]>("backup_guard"),
+  backupRun: (private_: boolean) => invoke<BackupDone>("backup_run", { private: private_ }),
+  sync: () => invoke<SyncOutcome>("sync_now"),
+  syncResolve: (choices: [string, Side][]) => invoke<SavePoint>("sync_resolve", { choices }),
+  syncExplain: (path: string) => invoke<Explanation>("sync_explain", { path }),
 };
 
 /** 자동 저장이 알려오는 것들. 창이 살아 있는 동안 계속 들어온다. */
@@ -93,6 +154,8 @@ export function onWatch(handlers: {
   saved?: (point: SavePoint) => void;
   blocked?: (findings: Finding[]) => void;
   summarized?: (id: string, summary: Summary) => void;
+  checked?: (id: string, outcome: Outcome) => void;
+  resuming?: (count: number) => void;
 }) {
   const offs = [
     listen<number>("kigtit:changed", (e) => handlers.changed?.(e.payload)),
@@ -101,6 +164,10 @@ export function onWatch(handlers: {
     listen<[string, Summary]>("kigtit:summarized", (e) =>
       handlers.summarized?.(e.payload[0], e.payload[1]),
     ),
+    listen<[string, Outcome]>("kigtit:checked", (e) =>
+      handlers.checked?.(e.payload[0], e.payload[1]),
+    ),
+    listen<number>("kigtit:resuming", (e) => handlers.resuming?.(e.payload)),
   ];
   return () => {
     offs.forEach((p) => p.then((off) => off()));

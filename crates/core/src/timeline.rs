@@ -78,7 +78,9 @@ pub fn list(project: &Project, limit: usize) -> Result<Vec<SavePoint>> {
 
     let mut walk = project.repo.revwalk()?;
     walk.push_head()?;
-    walk.set_sorting(git2::Sort::TIME)?;
+    // 시간만으로 정렬하면 같은 초에 담긴 세이브 포인트들의 순서가 뒤섞인다.
+    // TOPOLOGICAL을 같이 줘야 부모가 자식보다 뒤에 오는 것이 보장된다.
+    walk.set_sorting(git2::Sort::TIME | git2::Sort::TOPOLOGICAL)?;
 
     let mut out = Vec::new();
     for oid in walk.take(limit) {

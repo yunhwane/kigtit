@@ -18,3 +18,7 @@ venv/
 .turbo/
 .cache/
 coverage/
+
+# 세션 임시 파일
+.claude/*.lock
+.claude/scheduled_tasks.lock

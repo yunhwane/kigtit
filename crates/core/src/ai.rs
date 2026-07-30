@@ -17,6 +17,7 @@ use crate::Result;
 use crate::notes::{self, Meta};
 use crate::repo::Project;
 use crate::timeline::{self, FileChange};
+use crate::tools;
 
 /// diff를 이 길이로 잘라 넘긴다. 큰 변경도 요약 품질이 유지되는 선.
 const DIFF_LIMIT: usize = 12_000;
@@ -58,35 +59,12 @@ pub struct Summary {
 
 /// PATH에 있는 AI CLI를 찾는다. 앞쪽이 우선순위.
 pub fn detect() -> Agent {
-    for (agent, bin) in [(Agent::Claude, "claude"), (Agent::Codex, "codex")] {
-        if on_path(bin) {
+    for agent in [Agent::Claude, Agent::Codex] {
+        if tools::exists(agent.as_str()) {
             return agent;
         }
     }
     Agent::Rules
-}
-
-fn on_path(bin: &str) -> bool {
-    let Some(path) = std::env::var_os("PATH") else {
-        return false;
-    };
-    std::env::split_paths(&path).any(|dir| {
-        let p = dir.join(bin);
-        p.is_file() && is_executable(&p)
-    })
-}
-
-#[cfg(unix)]
-fn is_executable(p: &std::path::Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::metadata(p)
-        .map(|m| m.permissions().mode() & 0o111 != 0)
-        .unwrap_or(false)
-}
-
-#[cfg(not(unix))]
-fn is_executable(_p: &std::path::Path) -> bool {
-    true
 }
 
 const PROMPT: &str = "\
@@ -149,8 +127,38 @@ pub fn backfill(project: &Project, agent: Agent, limit: usize) -> Result<usize> 
     Ok(done)
 }
 
+/// 한 덩이의 변경을 한두 문장으로. 충돌 화면이 양쪽을 설명할 때 쓴다.
+pub fn describe_change(patch: &str, agent: Agent) -> String {
+    if agent == Agent::Rules {
+        let (added, removed) = count_lines(patch);
+        return format!("{added}줄이 늘고 {removed}줄이 줄었어요. 자세한 설명을 보려면 Claude Code나 Codex를 설치해 주세요.");
+    }
+    match run_agent(agent, patch) {
+        Ok(s) => s.summary,
+        Err(_) => {
+            let (added, removed) = count_lines(patch);
+            format!("{added}줄이 늘고 {removed}줄이 줄었어요.")
+        }
+    }
+}
+
+fn count_lines(patch: &str) -> (usize, usize) {
+    let added = patch
+        .lines()
+        .filter(|l| l.starts_with('+') && !l.starts_with("+++"))
+        .count();
+    let removed = patch
+        .lines()
+        .filter(|l| l.starts_with('-') && !l.starts_with("---"))
+        .count();
+    (added, removed)
+}
+
 fn run_agent(agent: Agent, diff: &str) -> Result<Summary> {
-    let mut cmd = Command::new(agent.as_str());
+    // PATH에 없을 수도 있으므로 찾아낸 절대 경로로 실행한다.
+    let program = tools::resolve(agent.as_str())
+        .ok_or_else(|| anyhow!("{}을(를) 찾지 못했어요.", agent.label()))?;
+    let mut cmd = Command::new(program);
     match agent {
         Agent::Claude => {
             // 요약은 순수 텍스트 변환이다. 도구 접근을 완전히 끊는다.
