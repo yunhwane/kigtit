@@ -91,10 +91,10 @@ pub fn watch(
     let mut watcher = notify::recommended_watcher(move |res| {
         let _ = tx.send(res);
     })
-    .context("폴더를 지켜보기 시작하지 못했어요.")?;
+    .context("Could not start watching the folder.")?;
     watcher
         .watch(&root, RecursiveMode::Recursive)
-        .with_context(|| format!("{}을(를) 지켜볼 수 없어요.", root.display()))?;
+        .with_context(|| format!("Could not watch {}.", root.display()))?;
 
     // 요약은 8초쯤 걸린다. 별 스레드에 맡기고 결과만 받아서, 그 사이에도
     // 파일 변경을 계속 받아들인다.

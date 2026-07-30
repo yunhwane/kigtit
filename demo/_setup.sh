@@ -7,21 +7,21 @@ rm -rf "$ROOT"; mkdir -p "$ROOT"
 
 cat > "$ROOT/menu.py" <<'EOF'
 MENU = [
-    {"name": "아메리카노", "price": 4000},
-    {"name": "라떼", "price": 4500},
+    {"name": "Americano", "price": 4},
+    {"name": "Latte", "price": 4.5},
 ]
 EOF
 printf '[project]\nname = "cafe"\nversion = "0.1.0"\n' > "$ROOT/pyproject.toml"
-kigtit -C "$ROOT" save "메뉴 목록 만들기" >/dev/null 2>&1
+kigtit -C "$ROOT" save "Create menu list" --no-summary >/dev/null 2>&1
 kigtit -C "$ROOT" health >/dev/null 2>&1
 
 cat > "$ROOT/order.py" <<'EOF'
 from menu import MENU
 
 def label(item):
-    return f"{item['name']} {item['price']}원"
+    return f"{item['name']} ${item['price']}"
 EOF
-kigtit -C "$ROOT" save "주문 표시 만들기" >/dev/null 2>&1
+kigtit -C "$ROOT" save "Create order display" --no-summary >/dev/null 2>&1
 kigtit -C "$ROOT" health >/dev/null 2>&1
 
 # AI가 괄호를 안 닫은 상황
@@ -34,5 +34,5 @@ def total(items):
 def first(items):
     return items[0]["name"]
 EOF
-kigtit -C "$ROOT" save "장바구니 기능 추가" >/dev/null 2>&1
+kigtit -C "$ROOT" save "Add cart feature" --no-summary >/dev/null 2>&1
 kigtit -C "$ROOT" health >/dev/null 2>&1

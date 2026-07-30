@@ -30,9 +30,9 @@ impl App {
     fn root(&self) -> Result<PathBuf, String> {
         self.root
             .lock()
-            .map_err(|_| "상태를 읽지 못했어요.".to_string())?
+            .map_err(|_| "Could not read the application state.".to_string())?
             .clone()
-            .ok_or_else(|| "아직 열린 프로젝트가 없어요.".to_string())
+            .ok_or_else(|| "No project is open yet.".to_string())
     }
 
     fn project(&self) -> Result<Project, String> {
@@ -98,7 +98,7 @@ fn open_project(path: String, app: AppHandle, state: State<App>) -> Result<Proje
     let name = root
         .file_name()
         .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_else(|| "프로젝트".into());
+        .unwrap_or_else(|| "Project".into());
 
     let agent = ai::detect();
     let info = ProjectInfo {
@@ -109,7 +109,7 @@ fn open_project(path: String, app: AppHandle, state: State<App>) -> Result<Proje
         has_history: project.has_history(),
     };
 
-    *state.root.lock().map_err(|_| "상태 오류")? = Some(root.clone());
+    *state.root.lock().map_err(|_| "Application state error")? = Some(root.clone());
     remember(&app, &root, &name);
     start_watch(&app, root, &state);
     Ok(info)
@@ -390,5 +390,5 @@ pub fn run() {
             sync_explain,
         ])
         .run(tauri::generate_context!())
-        .expect("Kigtit을 시작하지 못했어요.");
+        .expect("Could not start Kigtit.");
 }

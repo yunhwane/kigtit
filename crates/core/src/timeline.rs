@@ -24,9 +24,9 @@ pub enum Health {
 impl Health {
     pub fn label(self) -> &'static str {
         match self {
-            Health::Ok => "앱 잘 켜짐",
-            Health::Broken => "여기서 앱이 안 켜졌어요",
-            Health::Unknown => "확인 안 됨",
+            Health::Ok => "App starts fine",
+            Health::Broken => "App stopped starting here",
+            Health::Unknown => "Not checked",
         }
     }
 
@@ -111,7 +111,7 @@ pub fn describe(project: &Project, commit: &Commit<'_>) -> Result<SavePoint> {
     let fallback_title = raw_message
         .lines()
         .next()
-        .unwrap_or("세이브 포인트")
+        .unwrap_or("Save point")
         .to_string();
 
     let at = commit.time().seconds();
@@ -193,10 +193,10 @@ fn collect(diff: &git2::Diff<'_>) -> Vec<FileChange> {
             let (added, removed) = counts.get(&path).copied().unwrap_or((0, 0));
             FileChange {
                 kind: match delta.status() {
-                    Delta::Added | Delta::Untracked => "새 파일",
-                    Delta::Deleted => "삭제",
-                    Delta::Renamed => "이름 변경",
-                    _ => "수정",
+                    Delta::Added | Delta::Untracked => "New file",
+                    Delta::Deleted => "Deleted",
+                    Delta::Renamed => "Renamed",
+                    _ => "Modified",
                 }
                 .to_string(),
                 path,
@@ -225,13 +225,13 @@ fn label_time(at: DateTime<Local>) -> String {
     let same_day = at.date_naive() == now.date_naive();
     let hhmm = at.format("%-I:%M").to_string();
     let ampm = if at.format("%p").to_string() == "AM" {
-        "오전"
+        "AM"
     } else {
-        "오후"
+        "PM"
     };
     if same_day {
         format!("{ampm} {hhmm}")
     } else {
-        format!("{} {ampm} {hhmm}", at.format("%-m월 %-d일"))
+        format!("{} {ampm} {hhmm}", at.format("%b %-d"))
     }
 }

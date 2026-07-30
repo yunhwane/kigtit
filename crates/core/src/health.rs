@@ -60,35 +60,35 @@ pub fn detect(root: &Path) -> std::result::Result<Probe, String> {
     }
     if root.join("Cargo.toml").is_file() {
         let cargo = tools::resolve("cargo")
-            .ok_or_else(|| "cargo를 찾지 못해서 확인할 수 없어요".to_string())?;
+            .ok_or_else(|| "Cannot check because cargo was not found".to_string())?;
         return Ok(Probe {
-            label: "빌드 검사".into(),
+            label: "Build check".into(),
             program: cargo.to_string_lossy().to_string(),
             args: vec!["check".into(), "--quiet".into()],
         });
     }
     if root.join("pyproject.toml").is_file() || has_ext(root, "py") {
         let python = tools::resolve("python3")
-            .ok_or_else(|| "python3를 찾지 못해서 확인할 수 없어요".to_string())?;
+            .ok_or_else(|| "Cannot check because python3 was not found".to_string())?;
         return Ok(Probe {
-            label: "문법 검사".into(),
+            label: "Syntax check".into(),
             program: python.to_string_lossy().to_string(),
             args: vec!["-m".into(), "compileall".into(), "-q".into(), ".".into()],
         });
     }
-    Err("이 프로젝트는 확인할 방법을 아직 몰라요".into())
+    Err("Kigtit does not know how to check this project yet".into())
 }
 
 fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
     // node_modules가 없으면 어떤 명령도 진짜 실패인지 알 수 없다.
     if !root.join("node_modules").is_dir() {
-        return Err("먼저 의존성을 설치해야 확인할 수 있어요".into());
+        return Err("Install the dependencies before checking".into());
     }
 
     let body = std::fs::read_to_string(root.join("package.json"))
-        .map_err(|_| "package.json을 읽을 수 없어요".to_string())?;
+        .map_err(|_| "Could not read package.json".to_string())?;
     let json: serde_json::Value =
-        serde_json::from_str(&body).map_err(|_| "package.json 형식이 깨졌어요".to_string())?;
+        serde_json::from_str(&body).map_err(|_| "package.json is malformed".to_string())?;
     let scripts = json.get("scripts").and_then(|s| s.as_object());
 
     let runner = runner_for(root)?;
@@ -98,9 +98,9 @@ fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
         if scripts.map(|s| s.contains_key(name)).unwrap_or(false) {
             return Ok(Probe {
                 label: if name == "build" {
-                    "앱 빌드".into()
+                    "App build".into()
                 } else {
-                    "타입 검사".into()
+                    "Type check".into()
                 },
                 program: runner,
                 args: vec!["run".into(), name.into()],
@@ -110,13 +110,13 @@ fn node_probe(root: &Path) -> std::result::Result<Probe, String> {
 
     if root.join("tsconfig.json").is_file() {
         return Ok(Probe {
-            label: "타입 검사".into(),
+            label: "Type check".into(),
             program: runner,
             args: vec!["exec".into(), "tsc".into(), "--noEmit".into()],
         });
     }
 
-    Err("확인에 쓸 만한 명령을 찾지 못했어요".into())
+    Err("Could not find a suitable command for checking".into())
 }
 
 /// 잠금 파일이 가리키는 러너를 먼저 쓰되, 실제로 찾을 수 있는 것만 쓴다.
@@ -135,7 +135,7 @@ fn runner_for(root: &Path) -> std::result::Result<String, String> {
             return Ok(path.to_string_lossy().to_string());
         }
     }
-    Err("npm이나 pnpm을 찾지 못해서 확인할 수 없어요".into())
+    Err("Cannot check because npm or pnpm was not found".into())
 }
 
 fn has_ext(root: &Path, ext: &str) -> bool {
@@ -163,7 +163,7 @@ pub fn run(root: &Path, probe: &Probe) -> Outcome {
         Ok(c) => c,
         // 러너가 안 깔려 있으면 실패가 아니라 판단 불가다.
         Err(_) => {
-            return Outcome::unknown(format!("{}을(를) 실행할 수 없어요", probe.program));
+            return Outcome::unknown(format!("Could not run {}", probe.program));
         }
     };
 
@@ -171,17 +171,17 @@ pub fn run(root: &Path, probe: &Probe) -> Outcome {
         match child.try_wait() {
             Ok(Some(_)) => break,
             Ok(None) => {}
-            Err(_) => return Outcome::unknown("확인하는 중에 문제가 생겼어요"),
+            Err(_) => return Outcome::unknown("A problem occurred while checking"),
         }
         if started.elapsed() > TIMEOUT {
             let _ = child.kill();
-            return Outcome::unknown(format!("{}이(가) 너무 오래 걸려요", probe.label));
+            return Outcome::unknown(format!("{} took too long", probe.label));
         }
         std::thread::sleep(Duration::from_millis(150));
     }
 
     let Ok(out) = child.wait_with_output() else {
-        return Outcome::unknown("확인 결과를 읽지 못했어요");
+        return Outcome::unknown("Could not read the check result");
     };
 
     if out.status.success() {

@@ -33,10 +33,10 @@ impl SaveKind {
 
     pub fn label(self) -> &'static str {
         match self {
-            SaveKind::Auto => "자동 저장",
-            SaveKind::Manual => "직접 저장",
-            SaveKind::Restore => "되돌림",
-            SaveKind::Start => "시작점",
+            SaveKind::Auto => "Autosave",
+            SaveKind::Manual => "Manual save",
+            SaveKind::Restore => "Restore",
+            SaveKind::Start => "Starting point",
         }
     }
 
@@ -98,8 +98,8 @@ pub fn save(project: &Project, title: Option<&str>, kind: SaveKind) -> Result<Sa
 
     let file_count = timeline::uncommitted(project).map(|f| f.len()).unwrap_or(0);
     let headline = title.map(str::to_owned).unwrap_or_else(|| match kind {
-        SaveKind::Start => "프로젝트 시작".to_string(),
-        _ if file_count > 0 => format!("{} · 파일 {}개", kind.label(), file_count),
+        SaveKind::Start => "Project started".to_string(),
+        _ if file_count > 0 => format!("{} · {} files", kind.label(), file_count),
         _ => kind.label().to_string(),
     });
     let message = format!("{headline}\n\n{TRAILER} {}\n", kind.as_str());
@@ -114,7 +114,7 @@ pub fn save(project: &Project, title: Option<&str>, kind: SaveKind) -> Result<Sa
 
 /// 되돌리기 전에 현재 상태를 반드시 담아둔다. 그래서 잃는 경로가 없다.
 pub fn snapshot_before_restore(project: &Project) -> Result<Option<Oid>> {
-    match save(project, Some("되돌리기 직전 상태"), SaveKind::Restore)? {
+    match save(project, Some("State before restore"), SaveKind::Restore)? {
         SaveOutcome::Saved(sp) => Ok(Some(Oid::from_str(&sp.full_id)?)),
         SaveOutcome::NoChanges => Ok(None),
     }

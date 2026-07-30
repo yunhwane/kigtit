@@ -79,15 +79,15 @@ export function App() {
   // 자동 저장이 알려오는 것들.
   useEffect(() => {
     return onWatch({
-      changed: (files) => setActivity(`파일 ${files}개 바뀜 — 곧 담아요`),
+      changed: (files) => setActivity(`${files} files changed — saving soon`),
       saved: (point) => {
-        setActivity("앱이 켜지는지 확인하는 중…");
-        say(`담았어요 · ${point.title}`);
+        setActivity("Checking whether the app starts…");
+        say(`Saved · ${point.title}`);
         refresh();
       },
       checked: (_id, outcome) => {
         setActivity(null);
-        if (outcome.health === "broken") say(`앱이 안 켜져요 — ${outcome.how}`);
+        if (outcome.health === "broken") say(`The app won't start — ${outcome.how}`);
         refresh();
       },
       blocked: (findings) => {
@@ -95,7 +95,7 @@ export function App() {
         setBlocked(findings);
       },
       summarized: () => refresh(),
-      resuming: (count) => say(`꺼져 있는 동안 놓친 요약 ${count}개를 이어서 채워요.`),
+      resuming: (count) => say(`Finishing ${count} summaries missed while Kigtit was closed.`),
     });
   }, [refresh, say]);
 
@@ -111,8 +111,8 @@ export function App() {
       await refresh();
       say(
         done.snapshot_id
-          ? `되돌렸어요. 직전 상태는 ${done.snapshot_id}에 담아뒀어요.`
-          : "되돌렸어요. 되돌린 것도 되돌릴 수 있어요.",
+          ? `Restored. The previous state was saved as ${done.snapshot_id}.`
+          : "Restored. You can undo this restore too.",
       );
     } catch (e) {
       say(String(e));
@@ -147,9 +147,9 @@ export function App() {
       await refresh();
       say(
         outcome.health === "ok"
-          ? `앱이 잘 켜져요 · ${outcome.how}`
+          ? `The app starts fine · ${outcome.how}`
           : outcome.health === "broken"
-            ? `앱이 안 켜져요 · ${outcome.how}`
+            ? `The app won't start · ${outcome.how}`
             : outcome.how,
       );
     } catch (e) {
@@ -165,16 +165,16 @@ export function App() {
       const out = await api.sync();
       switch (out.kind) {
         case "noRemote":
-          say("아직 연결된 GitHub이 없어요. 먼저 백업해 주세요.");
+          say("No GitHub repository is connected yet. Back up first.");
           break;
         case "upToDate":
-          say("이미 같아요.");
+          say("Already up to date.");
           break;
         case "pulled":
-          say(`GitHub 쪽 세이브 포인트 ${out.count}개를 가져왔어요.`);
+          say(`Pulled ${out.count} save points from GitHub.`);
           break;
         case "merged":
-          say(`겹치는 파일이 없어서 알아서 합쳤어요. ${out.count}개 반영.`);
+          say(`Merged automatically with no overlapping files. Applied ${out.count}.`);
           break;
         case "needsChoice":
           setConflicts(out.conflicts);
@@ -192,7 +192,7 @@ export function App() {
     try {
       await api.exclude(f.path);
       setBlocked((prev) => (prev ?? []).filter((x) => x.path !== f.path));
-      say(`${f.path}를 백업에서 뺐어요.`);
+      say(`Excluded ${f.path} from backups.`);
     } catch (e) {
       say(String(e));
     }
@@ -213,7 +213,7 @@ export function App() {
       <div className="app">
         <aside className="rail">
           <div className="drag" />
-          <div className="rail-label">내 프로젝트</div>
+          <div className="rail-label">My projects</div>
           {recents.map((r) => (
             <button
               key={r.root}
@@ -229,33 +229,33 @@ export function App() {
           <div className="rail-foot">
             {project.agent === "rules" && (
               <p className="agent-note">
-                Claude Code나 Codex를 설치하면 바뀐 내용을 사람 말로 설명해 드려요.
+                Install Claude Code or Codex to get plain-language explanations of changes.
               </p>
             )}
             <button
               className="btn ghost sm wide"
               onClick={async () => {
-                const path = await open({ directory: true, title: "폴더 고르기" });
+                const path = await open({ directory: true, title: "Choose a folder" });
                 if (typeof path === "string") openProject(path);
               }}
             >
-              ＋ 폴더 열기
+              ＋ Open folder
             </button>
             <button className="btn ghost sm wide" onClick={() => setBackupOpen(true)}>
-              GitHub에 백업
+              Back up to GitHub
             </button>
             <button className="btn ghost sm wide" onClick={runSync} disabled={syncing}>
-              {syncing ? "맞추는 중…" : "GitHub와 맞추기"}
+              {syncing ? "Syncing…" : "Sync with GitHub"}
             </button>
             <button
               className="btn ghost sm wide"
               onClick={async () => {
                 const findings = await api.check();
-                if (findings.length === 0) say("위험한 파일이 없어요.");
+                if (findings.length === 0) say("No risky files found.");
                 else setBlocked(findings);
               }}
             >
-              위험한 파일 검사
+              Scan for risky files
             </button>
           </div>
         </aside>
@@ -302,25 +302,25 @@ export function App() {
       {revertTo && (
         <div className="scrim" onClick={() => setRevertTo(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <span className="chip accent">되돌리기</span>
+            <span className="chip accent">Restore</span>
             <h3>
-              {revertTo.at_label} “{revertTo.title}” 시점으로 되돌릴까요?
+              Go back to “{revertTo.title}” at {revertTo.at_label}?
             </h3>
-            <p>이 시점 이후에 바뀐 내용은 화면에서 사라집니다.</p>
+            <p>Changes made after this point will disappear from the current view.</p>
             {/* 이 한 줄이 비개발자가 버튼을 누르게 만든다. */}
             <div className="reassure">
               <span>🛟</span>
               <span>
-                <b>지금 상태는 자동으로 저장됩니다.</b> 되돌린 것도 되돌릴 수 있어요. 무엇도
-                영구히 사라지지 않습니다.
+                <b>Your current state will be saved automatically.</b> You can undo the restore.
+                Nothing is permanently lost.
               </span>
             </div>
             <div className="modal-actions">
               <button className="btn ghost" onClick={() => setRevertTo(null)}>
-                그만두기
+                Cancel
               </button>
               <button className="btn primary" onClick={confirmRestore}>
-                되돌리기
+                Restore
               </button>
             </div>
           </div>
@@ -332,12 +332,12 @@ export function App() {
           <div className="modal">
             <span className="chip warn">
               <span className="glyph">▲</span>
-              {blocked.some((f) => f.risk === "secret") ? "저장을 멈췄어요" : "확인이 필요해요"}
+              {blocked.some((f) => f.risk === "secret") ? "Saving paused" : "Review needed"}
             </span>
             <h3>
               {blocked.some((f) => f.risk === "secret")
-                ? "비밀 키처럼 보이는 게 파일에 들어 있어요"
-                : "백업에 넣으면 곤란한 파일이 있어요"}
+                ? "A file appears to contain a secret key"
+                : "Some files should not be included in backups"}
             </h3>
             <div className="findings">
               {blocked.map((f) => (
@@ -346,7 +346,7 @@ export function App() {
                   {f.masked && <code>{f.masked}</code>}
                   <div className="row-actions" style={{ margin: 0 }}>
                     <button className="btn sm" onClick={() => fixFinding(f)}>
-                      백업에서 빼두기
+                      Exclude from backups
                     </button>
                   </div>
                 </div>
@@ -355,8 +355,8 @@ export function App() {
             <div className="reassure warn">
               <span>🔐</span>
               <span>
-                키는 <b>.env 파일</b>로 옮기고, 코드에서는 그 파일을 불러오도록 바꿔 주세요.
-                .env는 이미 백업에서 빠져 있습니다.
+                Move the key to an <b>.env file</b> and load it from your code.
+                .env files are already excluded from backups.
               </span>
             </div>
             <div className="modal-actions">
@@ -367,7 +367,7 @@ export function App() {
                   refresh();
                 }}
               >
-                알겠어요
+                Got it
               </button>
             </div>
           </div>

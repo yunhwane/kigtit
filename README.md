@@ -2,7 +2,7 @@
 
 **Confidence that you can undo.** Save points for people who build with AI.
 
-[한국어](README.ko.md)
+[Korean documentation](README.ko.md)
 
 When you build by telling an AI what to do, things that used to work break. And
 you have no idea which point to go back to. Kigtit solves only that.
@@ -12,11 +12,8 @@ you have no idea which point to go back to. Kigtit solves only that.
 There is no Git vocabulary anywhere. No commit button, no branches. What you get
 is **a list of the things you asked for** and one **Go back to here** button.
 
-> **The app's interface is in Korean.** Kigtit was built for Korean-speaking
-> non-developers, and every label, summary and error explanation is written in
-> Korean. The code, comments in this README, and the docs are in English so the
-> design can be read and reused by anyone. Interface localization is
-> [not done yet](#not-there-yet).
+> **The app's interface is in English.** Labels, generated summaries, status
+> messages, and error explanations all use English.
 
 ---
 
@@ -25,8 +22,8 @@ is **a list of the things you asked for** and one **Go back to here** button.
 ### It tells you when the AI broke things
 
 Every time it saves, it **actually tries to run your app.** So the timeline is
-marked with `앱 잘 켜짐` (app starts fine) and `여기서 앱이 안 켜졌어요` (it
-stopped starting here). It also tells you where to go back to.
+marked with `App starts fine` and `App stopped starting here`. It also tells you
+where to go back to.
 
 Existing Git tools do not have this information at all. A list of commits alone
 doesn't tell you which commit had a working app — you have to revert one by one
@@ -41,13 +38,10 @@ the problem and where to go instead.
 
 Not many people can read a diff. So every explanation is a sentence, not code.
 
-> 메뉴 카드 위쪽에 사진 영역을 새로 만들었어요. 사진이 아직 없는 메뉴에는
-> 회색 기본 이미지가 대신 보입니다.
->
-> *(A photo area was added above each menu card. Menus without a photo yet show
-> a grey placeholder instead.)*
+> A photo area was added above each menu card. Menus without a photo yet show a
+> grey placeholder instead.
 
-Code only appears when you press "코드로 보기" (show me the code).
+Code only appears when you press "Show code."
 
 ### Undo isn't scary
 
@@ -173,8 +167,8 @@ All 13 commands with examples are in **[Using the CLI](docs/cli.md)**.
 
 - **There is no signed installer.** Which means a non-developer cannot install
   this alone, and that is the biggest hole right now.
-- **The interface is Korean only.** No localization layer exists yet; strings are
-  inline in the components and in `crates/core`.
+- **There is no localization layer yet.** English strings are inline in the
+  components and in `crates/core`.
 - macOS only.
 - Keys that were deleted from history aren't detected. Only what's in the files
   right now gets caught.

@@ -46,7 +46,7 @@ export function ConflictChoice({
     try {
       const list = conflicts.map((c) => [c.path, choices[c.path]] as [string, Side]);
       await api.syncResolve(list);
-      say("선택한 대로 합쳤어요. 마음에 안 들면 되돌릴 수 있어요.");
+      say("Merged your choices. You can restore the previous version if needed.");
       onDone();
       onClose();
     } catch (e) {
@@ -60,13 +60,13 @@ export function ConflictChoice({
     <div className="scrim" onClick={busy ? undefined : onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <span className="chip warn">
-          <span className="glyph">▲</span>선택이 필요해요
+          <span className="glyph">▲</span>A choice is needed
         </span>
         <h3>
-          파일 {conflicts.length}개를 두 곳에서 같이 고쳤어요
+          {conflicts.length} files were changed in both places
         </h3>
         <p>
-          어느 쪽을 남길지 골라 주세요. <b>다 고를 때까지 아무것도 바뀌지 않습니다.</b>
+          Choose which version to keep. <b>Nothing changes until you've chosen them all.</b>
         </p>
 
         <div className="conflicts">
@@ -83,13 +83,13 @@ export function ConflictChoice({
                     onClick={() => setChoices((p) => ({ ...p, [c.path]: "mine" }))}
                     aria-pressed={picked === "mine"}
                   >
-                    <span className="side-label">내 컴퓨터에서 한 것</span>
+                    <span className="side-label">Changes on my computer</span>
                     <span className="side-why">
                       {c.mine_deleted
-                        ? "이 파일을 지웠어요."
+                        ? "This file was deleted."
                         : info === "loading"
-                          ? "무엇을 했는지 읽는 중…"
-                          : (info?.mine ?? "설명을 만들지 못했어요.")}
+                          ? "Reading the changes…"
+                          : (info?.mine ?? "Couldn't create an explanation.")}
                     </span>
                   </button>
 
@@ -98,13 +98,13 @@ export function ConflictChoice({
                     onClick={() => setChoices((p) => ({ ...p, [c.path]: "theirs" }))}
                     aria-pressed={picked === "theirs"}
                   >
-                    <span className="side-label">GitHub에 있던 것</span>
+                    <span className="side-label">Changes on GitHub</span>
                     <span className="side-why">
                       {c.theirs_deleted
-                        ? "이 파일을 지웠어요."
+                        ? "This file was deleted."
                         : info === "loading"
-                          ? "무엇을 했는지 읽는 중…"
-                          : (info?.theirs ?? "설명을 만들지 못했어요.")}
+                          ? "Reading the changes…"
+                          : (info?.theirs ?? "Couldn't create an explanation.")}
                     </span>
                   </button>
                 </div>
@@ -116,21 +116,20 @@ export function ConflictChoice({
         <div className="reassure">
           <span>🛟</span>
           <span>
-            <b>고른 뒤에도 되돌릴 수 있어요.</b> 합치기도 하나의 세이브 포인트로
-            남습니다.
+            <b>You can go back after choosing.</b> The merge becomes a save point too.
           </span>
         </div>
 
         <div className="modal-actions">
           <button className="btn ghost" onClick={onClose} disabled={busy}>
-            나중에 하기
+            Decide later
           </button>
           <button className="btn primary" onClick={apply} disabled={busy || !allChosen}>
             {busy
-              ? "합치는 중…"
+              ? "Merging…"
               : allChosen
-                ? "이대로 합치기"
-                : `${conflicts.length - Object.keys(choices).length}개 더 골라 주세요`}
+                ? "Merge these choices"
+                : `Choose ${conflicts.length - Object.keys(choices).length} more`}
           </button>
         </div>
       </div>

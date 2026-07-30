@@ -74,7 +74,7 @@ pub fn run(
     cwd: &Path,
     timeout: Duration,
 ) -> std::result::Result<Output, String> {
-    let program = resolve(bin).ok_or_else(|| format!("{bin}을(를) 찾지 못했어요."))?;
+    let program = resolve(bin).ok_or_else(|| format!("Could not find {bin}."))?;
 
     let mut child = Command::new(program)
         .args(args)
@@ -83,25 +83,25 @@ pub fn run(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|_| format!("{bin}을(를) 실행하지 못했어요."))?;
+        .map_err(|_| format!("Could not run {bin}."))?;
 
     let started = Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(_)) => break,
             Ok(None) => {}
-            Err(_) => return Err(format!("{bin} 실행 중에 문제가 생겼어요.")),
+            Err(_) => return Err(format!("A problem occurred while running {bin}.")),
         }
         if started.elapsed() > timeout {
             let _ = child.kill();
-            return Err(format!("{bin} 응답이 너무 늦어요."));
+            return Err(format!("{bin} took too long to respond."));
         }
         std::thread::sleep(Duration::from_millis(120));
     }
 
     child
         .wait_with_output()
-        .map_err(|_| format!("{bin} 결과를 읽지 못했어요."))
+        .map_err(|_| format!("Could not read the result from {bin}."))
 }
 
 /// stdout과 stderr를 합친 텍스트. 도구들이 오류를 어느 쪽에 쓸지 일정하지 않다.

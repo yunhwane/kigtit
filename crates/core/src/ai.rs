@@ -45,7 +45,7 @@ impl Agent {
         match self {
             Agent::Claude => "Claude Code",
             Agent::Codex => "Codex",
-            Agent::Rules => "요약 도구 없음",
+            Agent::Rules => "No summary tool",
         }
     }
 }
@@ -68,18 +68,18 @@ pub fn detect() -> Agent {
 }
 
 const PROMPT: &str = "\
-당신은 코딩을 배운 적 없는 사람에게 방금 일어난 변경을 설명합니다.
-입력은 git diff입니다.
+Explain the changes that just happened to someone who has never learned to code.
+The input is a git diff.
 
-규칙:
-- 반드시 한국어로 씁니다.
-- 코드 용어를 쓰지 않습니다. 금지: 함수, 변수, 컴포넌트, 리팩터링, 커밋, props, state, import.
-- 화면에서 무엇이 달라지는지, 사용자가 무엇을 다르게 겪는지를 씁니다.
-- 파일 이름은 필요할 때만 씁니다.
-- 추측하지 않습니다. diff에 없는 내용을 만들지 않습니다.
+Rules:
+- Write in clear, natural English.
+- Do not use coding jargon. Avoid: function, variable, component, refactoring, commit, props, state, import.
+- Describe what changes on screen and what the user will experience differently.
+- Mention file names only when necessary.
+- Do not guess or invent anything not present in the diff.
 
-아래 JSON만 출력합니다. 다른 말은 한 글자도 붙이지 마세요.
-{\"title\": \"12자 이내 제목\", \"summary\": \"2~3문장 설명\"}";
+Output only the JSON below, with no additional text.
+{\"title\": \"Title under 40 characters\", \"summary\": \"2–3 sentence explanation\"}";
 
 /// 세이브 포인트 하나를 요약해 `refs/notes/kigtit`에 붙인다.
 ///
@@ -132,14 +132,14 @@ pub fn describe_change(patch: &str, agent: Agent) -> String {
     if agent == Agent::Rules {
         let (added, removed) = count_lines(patch);
         return format!(
-            "{added}줄이 늘고 {removed}줄이 줄었어요. 자세한 설명을 보려면 Claude Code나 Codex를 설치해 주세요."
+            "{added} lines were added and {removed} were removed. Install Claude Code or Codex for a detailed explanation."
         );
     }
     match run_agent(agent, patch) {
         Ok(s) => s.summary,
         Err(_) => {
             let (added, removed) = count_lines(patch);
-            format!("{added}줄이 늘고 {removed}줄이 줄었어요.")
+            format!("{added} lines were added and {removed} were removed.")
         }
     }
 }
@@ -159,7 +159,7 @@ fn count_lines(patch: &str) -> (usize, usize) {
 fn run_agent(agent: Agent, diff: &str) -> Result<Summary> {
     // PATH에 없을 수도 있으므로 찾아낸 절대 경로로 실행한다.
     let program = tools::resolve(agent.as_str())
-        .ok_or_else(|| anyhow!("{}을(를) 찾지 못했어요.", agent.label()))?;
+        .ok_or_else(|| anyhow!("Could not find {}.", agent.label()))?;
     let mut cmd = Command::new(program);
     match agent {
         Agent::Claude => {
@@ -175,7 +175,7 @@ fn run_agent(agent: Agent, diff: &str) -> Result<Summary> {
                 PROMPT,
             ]);
         }
-        Agent::Rules => return Err(anyhow!("규칙 기반은 CLI를 쓰지 않아요.")),
+        Agent::Rules => return Err(anyhow!("Rule-based summaries do not use a CLI.")),
     }
 
     let mut child = cmd
@@ -183,13 +183,13 @@ fn run_agent(agent: Agent, diff: &str) -> Result<Summary> {
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
-        .with_context(|| format!("{}을(를) 실행하지 못했어요.", agent.label()))?;
+        .with_context(|| format!("Could not run {}.", agent.label()))?;
 
     let head: String = diff.chars().take(DIFF_LIMIT).collect();
     child
         .stdin
         .take()
-        .ok_or_else(|| anyhow!("입력을 넘기지 못했어요."))?
+        .ok_or_else(|| anyhow!("Could not send the input."))?
         .write_all(head.as_bytes())?;
 
     let started = Instant::now();
@@ -199,7 +199,7 @@ fn run_agent(agent: Agent, diff: &str) -> Result<Summary> {
         }
         if started.elapsed() > TIMEOUT {
             let _ = child.kill();
-            return Err(anyhow!("{} 응답이 너무 늦어요.", agent.label()));
+            return Err(anyhow!("{} took too long to respond.", agent.label()));
         }
         std::thread::sleep(Duration::from_millis(120));
     }
@@ -221,15 +221,15 @@ fn parse(text: &str, agent: Agent) -> Result<Summary> {
     let end = text.rfind('}');
     let raw: Raw = match (start, end) {
         (Some(s), Some(e)) if e > s => {
-            serde_json::from_str(&text[s..=e]).map_err(|_| anyhow!("요약을 읽을 수 없어요."))?
+            serde_json::from_str(&text[s..=e]).map_err(|_| anyhow!("Could not read the summary."))?
         }
-        _ => return Err(anyhow!("요약이 비어 있어요.")),
+        _ => return Err(anyhow!("The summary is empty.")),
     };
 
     let title = raw.title.trim();
     let summary = raw.summary.trim();
     if title.is_empty() || summary.is_empty() {
-        return Err(anyhow!("요약이 비어 있어요."));
+        return Err(anyhow!("The summary is empty."));
     }
 
     Ok(Summary {
@@ -243,26 +243,26 @@ fn parse(text: &str, agent: Agent) -> Result<Summary> {
 fn from_rules(files: &[FileChange]) -> Summary {
     if files.is_empty() {
         return Summary {
-            title: "변경 없음".into(),
-            summary: "바뀐 파일이 없어요.".into(),
+            title: "No changes".into(),
+            summary: "No files changed.".into(),
             by: Agent::Rules.as_str().into(),
         };
     }
 
     let added: usize = files.iter().map(|f| f.added).sum();
     let removed: usize = files.iter().map(|f| f.removed).sum();
-    let new_files = files.iter().filter(|f| f.kind == "새 파일").count();
+    let new_files = files.iter().filter(|f| f.kind == "New file").count();
 
     let title = if new_files == files.len() {
-        format!("새 파일 {}개 추가", new_files)
+        format!("Added {} new files", new_files)
     } else {
-        format!("파일 {}개 수정", files.len())
+        format!("Changed {} files", files.len())
     };
 
     let names: Vec<&str> = files.iter().take(3).map(|f| f.path.as_str()).collect();
     let more = files.len().saturating_sub(names.len());
     let listed = if more > 0 {
-        format!("{} 외 {}개", names.join(", "), more)
+        format!("{} and {} more", names.join(", "), more)
     } else {
         names.join(", ")
     };
@@ -270,8 +270,8 @@ fn from_rules(files: &[FileChange]) -> Summary {
     Summary {
         title,
         summary: format!(
-            "{listed}가 바뀌었어요. 총 {added}줄이 늘고 {removed}줄이 줄었습니다. \
-             자세한 설명을 보려면 Claude Code나 Codex를 설치해 주세요."
+            "Changed {listed}. A total of {added} lines were added and {removed} were removed. \
+             Install Claude Code or Codex for a detailed explanation."
         ),
         by: Agent::Rules.as_str().into(),
     }

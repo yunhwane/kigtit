@@ -175,9 +175,9 @@ export function onWatch(handlers: {
 }
 
 export const HEALTH_LABEL: Record<Health, string> = {
-  ok: "앱 잘 켜짐",
-  broken: "여기서 앱이 안 켜졌어요",
-  unknown: "확인 안 됨",
+  ok: "App starts fine",
+  broken: "App stopped starting here",
+  unknown: "Not checked",
 };
 
 /** 색만으로 상태를 말하지 않는다. 도형을 같이 쓴다. */

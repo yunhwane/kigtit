@@ -21,7 +21,7 @@ Show
 # watch는 포그라운드를 잡으므로 배경으로 돌린다. 그래야 다음 명령이 실행된다.
 Type "kigtit watch --idle 2 &"  Sleep 400ms  Enter
 Sleep 2500ms
-Type@0ms "  # AI가 파일을 하나 만든다"  Enter
+Type@0ms "  # AI creates a file"  Enter
 Sleep 800ms
 Type@0ms "echo 'def tax(p:' > tax.py"  Enter
 Sleep 18s

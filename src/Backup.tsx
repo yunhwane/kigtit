@@ -33,8 +33,8 @@ export function Backup({
       const done = await api.backupRun(!makePublic);
       onDone(
         done.created
-          ? `GitHub에 새로 만들고 ${done.backed_up}개를 올렸어요.`
-          : `${done.backed_up}개를 올렸어요.`,
+          ? `Created a GitHub repository and uploaded ${done.backed_up} save points.`
+          : `Uploaded ${done.backed_up} save points.`,
       );
       onClose();
     } catch (e) {
@@ -50,23 +50,22 @@ export function Backup({
   return (
     <div className="scrim" onClick={busy ? undefined : onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <span className="chip accent">GitHub 백업</span>
+        <span className="chip accent">GitHub backup</span>
 
-        {!status && !error && <p>확인하는 중…</p>}
+        {!status && !error && <p>Checking…</p>}
 
         {status?.readiness.state === "noTool" && (
           <>
-            <h3>GitHub에 올리려면 준비가 하나 필요해요</h3>
+            <h3>One thing is needed before uploading to GitHub</h3>
             <p>
-              터미널에서 <code>brew install gh</code> 를 실행하고,{" "}
-              <code>gh auth login</code> 으로 한 번 로그인해 주세요. 그 뒤로는
-              Kigtit이 알아서 씁니다.
+              Run <code>brew install gh</code> in a terminal, then sign in once with{" "}
+              <code>gh auth login</code>. Kigtit will use that login from then on.
             </p>
             <div className="reassure">
               <span>🔑</span>
               <span>
-                <b>토큰을 만들거나 붙여넣을 필요는 없어요.</b> Kigtit은 이미 로그인된
-                것을 빌려 쓰기만 합니다.
+                <b>You don't need to create or paste a token.</b> Kigtit only uses your
+                existing login.
               </span>
             </div>
           </>
@@ -74,10 +73,9 @@ export function Backup({
 
         {status?.readiness.state === "notSignedIn" && (
           <>
-            <h3>GitHub 로그인이 한 번 필요해요</h3>
+            <h3>Sign in to GitHub once</h3>
             <p>
-              터미널에서 <code>gh auth login</code> 을 실행해 주세요. 끝나면 이
-              창을 다시 열면 됩니다.
+              Run <code>gh auth login</code> in a terminal, then reopen this window.
             </p>
           </>
         )}
@@ -86,18 +84,18 @@ export function Backup({
           <>
             <h3>
               {status!.remote
-                ? `세이브 포인트 ${status!.unbacked}개를 올릴까요?`
-                : "GitHub에 백업을 시작할까요?"}
+                ? `Upload ${status!.unbacked} save points?`
+                : "Start backing up to GitHub?"}
             </h3>
             <p>
               {status!.readiness.state === "ready" && (
                 <>
-                  <b>{status!.readiness.account}</b> 계정으로 올립니다.{" "}
+                  Uploading with the <b>{status!.readiness.account}</b> account.{" "}
                 </>
               )}
               {status!.remote
-                ? "이미 연결된 곳에 이어서 올려요."
-                : "이 폴더 이름으로 저장소를 새로 만들어요."}
+                ? "New save points will go to the connected repository."
+                : "A new repository will be created with this folder's name."}
             </p>
 
             {blocked && (
@@ -105,8 +103,8 @@ export function Backup({
                 <div className="reassure warn">
                   <span>🔐</span>
                   <span>
-                    <b>비밀 키가 들어 있어서 올릴 수 없어요.</b> 한 번 올라간 키는
-                    몇 분 안에 남이 긁어 갑니다.
+                    <b>Can't upload because a secret key was found.</b> Exposed keys can be
+                    scraped within minutes.
                   </span>
                 </div>
                 <div className="findings">
@@ -128,20 +126,18 @@ export function Backup({
                     checked={makePublic}
                     onChange={(e) => setMakePublic(e.target.checked)}
                   />
-                  <span>누구나 볼 수 있게 만들기</span>
+                  <span>Make this visible to everyone</span>
                 </label>
                 <div className={makePublic ? "reassure warn" : "reassure"}>
                   <span>{makePublic ? "🌏" : "🔒"}</span>
                   <span>
                     {makePublic ? (
                       <>
-                        <b>세상에 공개됩니다.</b> 코드와 지금까지의 모든 세이브
-                        포인트를 누구나 볼 수 있어요.
+                        <b>This will be public.</b> Anyone can see the code and every save point.
                       </>
                     ) : (
                       <>
-                        <b>나만 볼 수 있어요.</b> 나중에 GitHub에서 공개로 바꿀 수
-                        있습니다.
+                        <b>Only you can see it.</b> You can make it public later on GitHub.
                       </>
                     )}
                   </span>
@@ -155,11 +151,11 @@ export function Backup({
 
         <div className="modal-actions">
           <button className="btn ghost" onClick={onClose} disabled={busy}>
-            {ready && !blocked ? "그만두기" : "닫기"}
+            {ready && !blocked ? "Cancel" : "Close"}
           </button>
           {ready && !blocked && (
             <button className="btn primary" onClick={run} disabled={busy}>
-              {busy ? "올리는 중…" : makePublic ? "공개로 올리기" : "올리기"}
+              {busy ? "Uploading…" : makePublic ? "Upload publicly" : "Upload"}
             </button>
           )}
         </div>

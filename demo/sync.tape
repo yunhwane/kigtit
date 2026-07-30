@@ -20,7 +20,7 @@ Show
 
 Type "kigtit sync"  Sleep 400ms  Enter
 Sleep 5s
-Type "cat config.js  # 아직 내 것 그대로"  Sleep 300ms  Enter
+Type "cat config.js  # still my version"  Sleep 300ms  Enter
 Sleep 2500ms
 Type "kigtit sync --keep theirs"  Sleep 400ms  Enter
 Sleep 5s

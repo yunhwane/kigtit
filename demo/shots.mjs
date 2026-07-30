@@ -40,82 +40,82 @@ const POINTS = [
     id: "801b8bf",
     full_id: "801b8bf0000000000000000000000000000000aa",
     at: 0,
-    at_label: "오후 3:12",
-    title: "장바구니 계산 추가",
+    at_label: "3:12 PM",
+    title: "Add cart total",
     summary:
-      "장바구니에 담긴 상품들의 총 가격을 계산하고 첫 번째 상품의 이름을 보여주는 기능이 추가되었습니다.",
+      "The cart now calculates the total price and shows the name of the first item.",
     health: "broken",
-    checked_by: "앱 빌드",
+    checked_by: "App build",
     broke_because:
       "*** Error compiling './cart.py'...\n  File \"./cart.py\", line 4\n    return sum(i[\"price\"] for i in items\n              ^\nSyntaxError: '(' was never closed",
     files: [
-      { path: "components/Cart.tsx", kind: "새 파일", added: 14, removed: 0 },
-      { path: "lib/cart.ts", kind: "새 파일", added: 22, removed: 0 },
-      { path: "app/page.tsx", kind: "수정", added: 3, removed: 1 },
+      { path: "components/Cart.tsx", kind: "New file", added: 14, removed: 0 },
+      { path: "lib/cart.ts", kind: "New file", added: 22, removed: 0 },
+      { path: "app/page.tsx", kind: "Modified", added: 3, removed: 1 },
     ],
   }),
   sp({
     id: "2715681",
     full_id: "27156810000000000000000000000000000000bb",
     at: 0,
-    at_label: "오후 2:47",
-    title: "메뉴 카드에 사진 넣기",
+    at_label: "2:47 PM",
+    title: "Add photos to menu cards",
     summary:
-      "메뉴 카드 위쪽에 사진 영역을 새로 만들었어요. 사진이 아직 없는 메뉴에는 회색 기본 이미지가 대신 보입니다.",
+      "A photo area was added above each menu card. Menus without a photo show a grey placeholder.",
     health: "ok",
-    checked_by: "앱 빌드",
+    checked_by: "App build",
     files: [
-      { path: "components/MenuCard.tsx", kind: "수정", added: 22, removed: 3 },
-      { path: "lib/menu.ts", kind: "수정", added: 8, removed: 0 },
-      { path: "public/menu-placeholder.png", kind: "새 파일", added: 0, removed: 0 },
+      { path: "components/MenuCard.tsx", kind: "Modified", added: 22, removed: 3 },
+      { path: "lib/menu.ts", kind: "Modified", added: 8, removed: 0 },
+      { path: "public/menu-placeholder.png", kind: "New file", added: 0, removed: 0 },
     ],
   }),
   sp({
     id: "9f3c204",
     full_id: "9f3c2040000000000000000000000000000000cc",
     at: 0,
-    at_label: "오후 2:31",
-    title: "주문 버튼 색 바꾸기",
+    at_label: "2:31 PM",
+    title: "Change order button color",
     summary:
-      "주문하기 버튼이 초록색에서 파란색으로 바뀌었습니다. 모서리가 더 둥글어지고 그림자 효과가 추가되었습니다.",
+      "The order button changed from green to blue, with rounder corners and a new shadow.",
     health: "ok",
-    checked_by: "앱 빌드",
-    files: [{ path: "components/OrderButton.tsx", kind: "수정", added: 4, removed: 4 }],
+    checked_by: "App build",
+    files: [{ path: "components/OrderButton.tsx", kind: "Modified", added: 4, removed: 4 }],
   }),
   sp({
     id: "da8d2b9",
     full_id: "da8d2b90000000000000000000000000000000dd",
     at: 0,
-    at_label: "오후 1:20",
-    title: "프로젝트 시작",
+    at_label: "1:20 PM",
+    title: "Project started",
     kind: "start",
-    files: [{ path: "app/page.tsx", kind: "새 파일", added: 24, removed: 0 }],
+    files: [{ path: "app/page.tsx", kind: "New file", added: 24, removed: 0 }],
   }),
 ];
 
 const SAMPLE = {
-  launch_folder: "/Users/yunhwane/Documents/카페-주문앱",
+  launch_folder: "/Users/yunhwane/Documents/cafe-order-app",
   open_project: {
-    root: "/Users/yunhwane/Documents/카페-주문앱",
-    name: "카페 주문앱",
+    root: "/Users/yunhwane/Documents/cafe-order-app",
+    name: "Cafe order app",
     agent: "claude",
     agent_label: "Claude Code",
     has_history: true,
   },
   recent: [
-    { root: "/Users/yunhwane/Documents/카페-주문앱", name: "카페 주문앱", at: NOW - 600 },
-    { root: "/Users/yunhwane/Documents/포트폴리오", name: "포트폴리오 사이트", at: NOW - 86400 },
-    { root: "/Users/yunhwane/Documents/독서기록", name: "독서 기록장", at: NOW - 3 * 86400 },
+    { root: "/Users/yunhwane/Documents/cafe-order-app", name: "Cafe order app", at: NOW - 600 },
+    { root: "/Users/yunhwane/Documents/portfolio", name: "Portfolio site", at: NOW - 86400 },
+    { root: "/Users/yunhwane/Documents/reading-log", name: "Reading log", at: NOW - 3 * 86400 },
   ],
   view: {
     points: POINTS,
     pending: [
-      { path: "app/page.tsx", kind: "수정", added: 6, removed: 2 },
-      { path: "lib/menu.ts", kind: "수정", added: 2, removed: 0 },
+      { path: "app/page.tsx", kind: "Modified", added: 6, removed: 2 },
+      { path: "lib/menu.ts", kind: "Modified", added: 2, removed: 0 },
     ],
     last_healthy: "2715681",
   },
-  health_probe: "앱 빌드",
+  health_probe: "App build",
   backup_status: {
     readiness: { state: "ready", account: "yunhwane" },
     remote: null,
@@ -133,14 +133,14 @@ const SAMPLE = {
   sync_explain: {
     "config.js": {
       path: "config.js",
-      mine: "카페의 영업시간이 밤 10시까지에서 오후 6시까지로 변경되어 더 일찍 닫게 됩니다. 일요일에 문을 닫는다는 정보가 새로 추가되었습니다.",
+      mine: "The cafe now closes at 6 PM instead of 10 PM. A note says it is closed on Sundays.",
       theirs:
-        "카페 이름이 '내 카페 ☕'로 바뀌고, 영업시간이 새벽 7시부터 밤 11시까지로 늘어났습니다. 새벽 배송이 시작되었다는 공지가 추가되었습니다.",
+        "The cafe is now called 'My Cafe ☕' and stays open from 7 AM to 11 PM. A notice announces early-morning delivery.",
     },
     "lib/menu.ts": {
       path: "lib/menu.ts",
-      mine: "메뉴에서 콜드브루를 빼고 대신 디카페인 라떼를 넣었습니다. 가격은 5000원입니다.",
-      theirs: "메뉴에 콜드브루와 티 두 가지가 더해져 모두 네 가지가 되었습니다.",
+      mine: "Cold brew was replaced with a decaf latte priced at $5.",
+      theirs: "Cold brew and two teas were added, bringing the menu to four drinks.",
     },
   },
 };
@@ -193,7 +193,7 @@ const SHOTS = [
     name: "app-broken",
     what: "앱이 안 켜지는 시점을 고르면 이유가 그대로 나온다",
     async act(page) {
-      await page.getByRole("button", { name: /장바구니 계산 추가/ }).click();
+      await page.getByRole("button", { name: /Add cart total/ }).click();
       await page.waitForTimeout(200);
     },
   },
@@ -201,8 +201,8 @@ const SHOTS = [
     name: "app-revert",
     what: "되돌리기 확인창 — 안심시키는 한 줄이 핵심",
     async act(page) {
-      await page.getByRole("button", { name: /장바구니 계산 추가/ }).click();
-      await page.getByRole("button", { name: "이 시점으로 되돌리기" }).click();
+      await page.getByRole("button", { name: /Add cart total/ }).click();
+      await page.getByRole("button", { name: "Go back to this point" }).click();
       await page.waitForTimeout(200);
     },
   },
@@ -210,7 +210,7 @@ const SHOTS = [
     name: "app-backup",
     what: "GitHub 백업 — 토큰을 묻지 않고 기본은 비공개",
     async act(page) {
-      await page.getByRole("button", { name: "GitHub에 백업" }).click();
+      await page.getByRole("button", { name: "Back up to GitHub" }).click();
       await page.waitForTimeout(400);
     },
   },
@@ -218,9 +218,9 @@ const SHOTS = [
     name: "app-conflict",
     what: "선택이 필요해요 — 양쪽이 뭘 하려 했는지 읽고 고른다",
     async act(page) {
-      await page.getByRole("button", { name: "GitHub와 맞추기" }).click();
+      await page.getByRole("button", { name: "Sync with GitHub" }).click();
       await page.waitForTimeout(600);
-      await page.getByRole("button", { name: /영업시간이 밤 10시까지에서/ }).click();
+      await page.getByRole("button", { name: /now closes at 6 PM/ }).click();
       await page.waitForTimeout(200);
     },
   },

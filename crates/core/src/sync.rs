@@ -65,12 +65,12 @@ pub fn sync(project: &Project) -> Result<Outcome> {
     }
 
     // 내 작업을 먼저 담아 둔다. 맞추다가 잃는 경로를 없앤다.
-    save::save(project, Some("맞추기 직전 상태"), SaveKind::Auto)?;
+    save::save(project, Some("State before sync"), SaveKind::Auto)?;
     fetch(project, &branch)?;
 
     let mine = project
         .head_commit()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
     let Some(theirs) = remote_commit(project, &branch) else {
         // GitHub에 이 갈래가 아직 없다. 올리기만 하면 된다.
         return Ok(Outcome::UpToDate);
@@ -106,7 +106,7 @@ pub fn sync(project: &Project) -> Result<Outcome> {
     }
 
     let count = count_between(project, base_oid, theirs.id())?;
-    commit_merge(project, &mut index, &mine, &theirs, "GitHub 쪽 변경 합치기")?;
+    commit_merge(project, &mut index, &mine, &theirs, "Merge changes from GitHub")?;
     Ok(Outcome::Merged { count })
 }
 
@@ -115,9 +115,9 @@ pub fn resolve(project: &Project, choices: &[(String, Side)]) -> Result<SavePoin
     let branch = branch_of(project)?;
     let mine = project
         .head_commit()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
     let theirs = remote_commit(project, &branch)
-        .ok_or_else(|| anyhow!("GitHub 쪽 내용을 찾을 수 없어요. 다시 맞춰 주세요."))?;
+        .ok_or_else(|| anyhow!("Could not find the GitHub version. Sync again."))?;
 
     let base_oid = project.repo.merge_base(mine.id(), theirs.id())?;
     let base = project.repo.find_commit(base_oid)?;
@@ -132,15 +132,15 @@ pub fn resolve(project: &Project, choices: &[(String, Side)]) -> Result<SavePoin
             .iter()
             .find(|(p, _)| *p == conflict.path)
             .map(|(_, s)| *s)
-            .ok_or_else(|| anyhow!("{}를 어느 쪽으로 둘지 아직 안 골랐어요.", conflict.path))?;
+            .ok_or_else(|| anyhow!("You have not chosen which version of {} to keep.", conflict.path))?;
         keep(&mut index, &conflict.path, side, &mine, &theirs)?;
     }
 
     if index.has_conflicts() {
-        return Err(anyhow!("아직 정리되지 않은 파일이 남아 있어요."));
+        return Err(anyhow!("Some files are still unresolved."));
     }
 
-    commit_merge(project, &mut index, &mine, &theirs, "선택한 대로 합치기")
+    commit_merge(project, &mut index, &mine, &theirs, "Merge selected versions")
 }
 
 /// 겹친 파일에서 양쪽이 무엇을 하려 했는지.
@@ -161,9 +161,9 @@ pub fn explain(project: &Project, path: &str, agent: crate::ai::Agent) -> Result
     let branch = branch_of(project)?;
     let mine = project
         .head_commit()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
     let theirs = remote_commit(project, &branch)
-        .ok_or_else(|| anyhow!("GitHub 쪽 내용을 찾을 수 없어요."))?;
+        .ok_or_else(|| anyhow!("Could not find the GitHub version."))?;
     let base = project
         .repo
         .find_commit(project.repo.merge_base(mine.id(), theirs.id())?)?;
@@ -193,7 +193,7 @@ fn describe_side(
             .repo
             .diff_tree_to_tree(base_tree.as_ref(), side_tree.as_ref(), Some(&mut opts))
     else {
-        return "무엇이 달라졌는지 읽지 못했어요.".into();
+        return "Could not read what changed.".into();
     };
 
     let mut patch = String::new();
@@ -206,7 +206,7 @@ fn describe_side(
     });
 
     if patch.trim().is_empty() {
-        return "이 파일은 그대로 뒀어요.".into();
+        return "This file was left unchanged.".into();
     }
     crate::ai::describe_change(&patch, agent)
 }
@@ -299,7 +299,7 @@ fn fast_forward(project: &Project, theirs: &Commit<'_>, branch: &str) -> Result<
         &format!("refs/heads/{branch}"),
         theirs.id(),
         true,
-        "kigtit: GitHub 쪽으로 따라가기",
+        "kigtit: Follow GitHub version",
     )?;
     save::checkout_tree(project, &theirs.tree()?)?;
     Ok(())
@@ -321,7 +321,7 @@ fn fetch(project: &Project, branch: &str) -> Result<()> {
         if text.contains("couldn't find remote ref") {
             return Ok(());
         }
-        return Err(anyhow!("GitHub에서 가져오지 못했어요.\n{text}"));
+        return Err(anyhow!("Could not fetch from GitHub.\n{text}"));
     }
     Ok(())
 }
@@ -341,7 +341,7 @@ fn branch_of(project: &Project) -> Result<String> {
         .head()?
         .shorthand()
         .map(str::to_owned)
-        .ok_or_else(|| anyhow!("어느 갈래인지 알 수 없어요."))
+        .ok_or_else(|| anyhow!("Could not determine the branch."))
 }
 
 /// `from` 이후 `to`까지 몇 개의 세이브 포인트가 있는지.

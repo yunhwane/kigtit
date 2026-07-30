@@ -13,7 +13,7 @@ pub struct Project {
 
 /// 비개발자가 실수로 올릴 만한 것들. 프로젝트를 열 때 조용히 넣어준다.
 const DEFAULT_IGNORES: &[&str] = &[
-    "# Kigtit이 자동으로 넣은 목록입니다. 백업에서 제외됩니다.",
+    "# Added automatically by Kigtit. These files are excluded from backups.",
     "node_modules/",
     ".env",
     ".env.*",
@@ -40,11 +40,11 @@ impl Project {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
         if !path.is_dir() {
-            return Err(anyhow!("폴더를 찾을 수 없어요: {}", path.display()));
+            return Err(anyhow!("Folder not found: {}", path.display()));
         }
         let root = path
             .canonicalize()
-            .with_context(|| format!("폴더 경로를 읽을 수 없어요: {}", path.display()))?;
+            .with_context(|| format!("Could not read folder path: {}", path.display()))?;
 
         let repo = match Repository::discover(&root) {
             Ok(r) => r,
@@ -54,7 +54,7 @@ impl Project {
                 let mut opts = git2::RepositoryInitOptions::new();
                 opts.initial_head(&default_branch());
                 Repository::init_opts(&root, &opts)
-                    .with_context(|| format!("프로젝트를 준비하지 못했어요: {}", root.display()))?
+                    .with_context(|| format!("Could not prepare project: {}", root.display()))?
             }
         };
 
@@ -62,7 +62,7 @@ impl Project {
         // 두 번 쌓이지 않도록 정규화해 둔다.
         let workdir = repo
             .workdir()
-            .ok_or_else(|| anyhow!("이 폴더는 Kigtit으로 열 수 없어요."))?;
+            .ok_or_else(|| anyhow!("This folder cannot be opened with Kigtit."))?;
         let root = workdir
             .canonicalize()
             .unwrap_or_else(|_| workdir.to_path_buf());
@@ -96,7 +96,7 @@ impl Project {
     fn ensure_ignores(&self) -> Result<()> {
         let path = self.root.join(".gitignore");
         let existing = std::fs::read_to_string(&path).unwrap_or_default();
-        if existing.contains("Kigtit이 자동으로") {
+        if existing.contains("Added automatically by Kigtit") {
             return Ok(());
         }
 
@@ -118,7 +118,7 @@ impl Project {
         }
         out.push_str(&missing.join("\n"));
         out.push('\n');
-        std::fs::write(&path, out).with_context(|| "제외 목록을 저장하지 못했어요.")?;
+        std::fs::write(&path, out).with_context(|| "Could not save the exclusion list.")?;
         Ok(())
     }
 

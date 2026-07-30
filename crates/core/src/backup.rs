@@ -115,7 +115,7 @@ fn unbacked(project: &Project, branch: &str) -> Result<usize> {
         .repo
         .head()?
         .target()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
 
     let mut walk = project.repo.revwalk()?;
     walk.push(head)?;
@@ -148,27 +148,27 @@ pub fn run(project: &Project, private: bool) -> Result<Done> {
     let blocking = guard(project)?;
     if !blocking.is_empty() {
         return Err(anyhow!(
-            "비밀 키가 들어 있어서 백업을 멈췄어요. {} — 먼저 정리해 주세요.",
+            "Backup stopped because a secret key was found. {} — fix it first.",
             blocking[0].message
         ));
     }
 
     if !project.has_history() {
-        return Err(anyhow!("아직 세이브 포인트가 없어요. 먼저 저장해 주세요."));
+        return Err(anyhow!("There are no save points yet. Save first."));
     }
     if matches!(readiness(&project.root), Readiness::NoTool) {
         return Err(anyhow!(
-            "GitHub에 올리려면 gh가 필요해요. `brew install gh` 뒤에 `gh auth login`을 한 번 해 주세요."
+            "The gh CLI is required to upload to GitHub. Run `brew install gh`, then `gh auth login` once."
         ));
     }
     if matches!(readiness(&project.root), Readiness::NotSignedIn) {
         return Err(anyhow!(
-            "GitHub 로그인이 필요해요. 터미널에서 `gh auth login`을 한 번 해 주세요."
+            "GitHub sign-in is required. Run `gh auth login` once in a terminal."
         ));
     }
 
     let branch =
-        current_branch(project).ok_or_else(|| anyhow!("어느 갈래를 올려야 할지 알 수 없어요."))?;
+        current_branch(project).ok_or_else(|| anyhow!("Could not determine which branch to upload."))?;
     let count = unbacked(project, &branch)?;
 
     let created = match remote_url(project) {
@@ -204,7 +204,7 @@ fn create_repo(project: &Project, private: bool) -> Result<()> {
 
     if !out.status.success() {
         return Err(anyhow!(
-            "GitHub에 저장소를 만들지 못했어요.\n{}",
+            "Could not create the GitHub repository.\n{}",
             tools::text(&out)
         ));
     }
@@ -223,7 +223,7 @@ fn push(project: &Project, branch: &str) -> Result<()> {
     .map_err(|e| anyhow!(e))?;
 
     if !out.status.success() {
-        return Err(anyhow!("올리는 데 실패했어요.\n{}", tools::text(&out)));
+        return Err(anyhow!("Upload failed.\n{}", tools::text(&out)));
     }
     Ok(())
 }

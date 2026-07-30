@@ -32,14 +32,14 @@ export function Timeline({
       <div className="drag" />
       <div className="stream-head">
         <div>
-          <h2>{projectName}에서 한 일</h2>
+          <h2>Work in {projectName}</h2>
           <div className="sub">
-            세이브 포인트 {points.length}개 · 요약 {agentLabel}
+            {points.length} save points · Summaries by {agentLabel}
           </div>
         </div>
         <div className="autosave">
           <span className="pulse" />
-          {activity ?? "자동 저장 켜짐"}
+          {activity ?? "Autosave on"}
         </div>
       </div>
 
@@ -52,11 +52,11 @@ export function Timeline({
           <div>
             <div className="card now">
               <div className="card-top">
-                <span className="time">지금</span>
-                <span className="chip accent">저장 중</span>
+                <span className="time">Now</span>
+                <span className="chip accent">Saving</span>
               </div>
-              <h3>아직 저장되지 않은 변경 {pending.length}개</h3>
-              <p>몇 초 뒤에 자동으로 세이브 포인트가 만들어져요.</p>
+              <h3>{pending.length} unsaved changes</h3>
+              <p>A save point will be created automatically in a few seconds.</p>
               <span className="meta">{names(pending)}</span>
             </div>
           </div>
@@ -65,9 +65,9 @@ export function Timeline({
 
       {points.length === 0 && pending.length === 0 && (
         <p className="empty">
-          아직 세이브 포인트가 없어요.
+          No save points yet.
           <br />
-          파일을 바꾸면 알아서 담깁니다.
+          Change a file and it will be saved automatically.
         </p>
       )}
 
@@ -119,10 +119,10 @@ function Event({
           {sp.summary ? (
             <p>{sp.summary}</p>
           ) : sp.pending_summary ? (
-            <p className="waiting">요약 중…</p>
+            <p className="waiting">Summarizing…</p>
           ) : null}
           <span className="meta">
-            파일 {sp.files.length}개 · {kindLabel(sp)}
+            {sp.files.length} files · {kindLabel(sp)}
           </span>
         </button>
 
@@ -134,7 +134,7 @@ function Event({
         {safe && (
           <div className="row-actions">
             <button className="btn sm danger" onClick={() => onRestore(safe.full_id)}>
-              {safe.title} 시점으로 되돌리기
+              Go back to {safe.title}
             </button>
           </div>
         )}
@@ -148,7 +148,7 @@ function healthyBefore(points: SavePoint[], i: number): SavePoint | null {
 }
 
 function kindLabel(sp: SavePoint) {
-  return { auto: "자동 저장", manual: "직접 저장", restore: "되돌림", start: "시작점" }[
+  return { auto: "Autosave", manual: "Manual save", restore: "Restore", start: "Starting point" }[
     sp.kind
   ];
 }
@@ -156,5 +156,5 @@ function kindLabel(sp: SavePoint) {
 function names(files: FileChange[]) {
   const head = files.slice(0, 3).map((f) => f.path);
   const more = files.length - head.length;
-  return more > 0 ? `${head.join(", ")} 외 ${more}개` : head.join(", ");
+  return more > 0 ? `${head.join(", ")} and ${more} more` : head.join(", ");
 }

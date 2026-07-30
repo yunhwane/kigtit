@@ -37,16 +37,16 @@ pub fn restore_to(project: &Project, id: &str) -> Result<Restored> {
 
     let head = project
         .head_commit()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 하나도 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
 
     if head.tree()?.id() == target_tree.id() {
-        return Err(anyhow!("이미 그 시점과 똑같은 상태예요."));
+        return Err(anyhow!("The project is already identical to that point."));
     }
 
     // 2. 목표 시점의 내용을 그대로 담은 새 세이브 포인트를 얹는다.
     let sig = project.signature()?;
     let message = format!(
-        "되돌림: {target_title}\n\nKigtit-Kind: {}\nKigtit-Restored-From: {target_id}\n",
+        "Restore: {target_title}\n\nKigtit-Kind: {}\nKigtit-Restored-From: {target_id}\n",
         SaveKind::Restore.as_str()
     );
     let oid = project
@@ -69,10 +69,10 @@ pub fn restore_to(project: &Project, id: &str) -> Result<Restored> {
 pub fn undo(project: &Project) -> Result<Restored> {
     let head = project
         .head_commit()
-        .ok_or_else(|| anyhow!("아직 세이브 포인트가 하나도 없어요."))?;
+        .ok_or_else(|| anyhow!("There are no save points yet."))?;
     let parent = head
         .parent(0)
-        .map_err(|_| anyhow!("여기가 시작점이라 더 되돌릴 수 없어요."))?;
+        .map_err(|_| anyhow!("This is the starting point, so there is nowhere further to go back."))?;
     restore_to(project, &parent.id().to_string())
 }
 

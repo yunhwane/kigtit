@@ -12,7 +12,7 @@ export function Onboarding({ onOpen }: { onOpen: (path: string) => void }) {
   }, []);
 
   async function pick() {
-    const path = await open({ directory: true, title: "작업하던 폴더를 고르세요" });
+    const path = await open({ directory: true, title: "Choose the folder you were working in" });
     if (typeof path === "string") onOpen(path);
   }
 
@@ -28,16 +28,16 @@ export function Onboarding({ onOpen }: { onOpen: (path: string) => void }) {
     >
       <div className={over ? "dropzone over" : "dropzone"}>
         <span className="glyph">🕰️</span>
-        <h2>작업하던 폴더를 끌어다 놓으세요</h2>
-        <p>나머지는 알아서 준비합니다. 설정할 것도, 만들 계정도 없어요.</p>
+        <h2>Drop the folder you've been working in</h2>
+        <p>We'll take care of the rest. No settings or account required.</p>
         <button className="btn primary" onClick={pick}>
-          폴더 고르기
+          Choose folder
         </button>
       </div>
 
       {recents.length > 0 && (
         <div className="recent">
-          <div className="rail-label">최근에 열었던 폴더</div>
+          <div className="rail-label">Recently opened folders</div>
           {recents.map((r) => (
             <button key={r.root} className="recent-row" onClick={() => onOpen(r.root)}>
               <span className="swatch" />
@@ -53,10 +53,10 @@ export function Onboarding({ onOpen }: { onOpen: (path: string) => void }) {
 
 function ago(at: number) {
   const mins = Math.max(0, Math.floor(Date.now() / 1000 - at) / 60);
-  if (mins < 1) return "방금";
-  if (mins < 60) return `${Math.floor(mins)}분 전`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${Math.floor(mins)}m ago`;
   const hours = mins / 60;
-  if (hours < 24) return `${Math.floor(hours)}시간 전`;
+  if (hours < 24) return `${Math.floor(hours)}h ago`;
   const days = Math.floor(hours / 24);
-  return days === 1 ? "어제" : `${days}일 전`;
+  return days === 1 ? "Yesterday" : `${days}d ago`;
 }

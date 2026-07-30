@@ -12,13 +12,13 @@ use kigtit_core::{Agent, Project, Risk, SaveKind, SaveOutcome, ai, restore, secr
 #[derive(Parser)]
 #[command(
     name = "kigtit",
-    about = "되돌릴 수 있다는 확신 — 비개발자를 위한 세이브 포인트",
+    about = "Confidence that you can undo — save points for non-developers",
     version,
     disable_help_subcommand = true
 )]
 struct Cli {
     /// 대상 폴더 (기본값: 지금 폴더)
-    #[arg(long, short = 'C', global = true, value_name = "폴더")]
+    #[arg(long, short = 'C', global = true, value_name = "FOLDER")]
     dir: Option<PathBuf>,
 
     #[command(subcommand)]
@@ -140,26 +140,26 @@ fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> 
     println!();
     match &status.readiness {
         Readiness::Ready { account } => {
-            println!("  \x1b[32m●\x1b[0m  {account} 계정으로 올릴 수 있어요")
+            println!("  \x1b[32m●\x1b[0m  Ready to upload as {account}")
         }
         Readiness::NotSignedIn => {
-            println!("  \x1b[33m▲\x1b[0m  GitHub 로그인이 필요해요");
-            println!("     \x1b[2m터미널에서 `gh auth login`을 한 번 해 주세요.\x1b[0m\n");
+            println!("  \x1b[33m▲\x1b[0m  GitHub sign-in required");
+            println!("     \x1b[2mRun `gh auth login` once in a terminal.\x1b[0m\n");
             return Ok(());
         }
         Readiness::NoTool => {
-            println!("  \x1b[33m▲\x1b[0m  GitHub에 올리려면 gh가 필요해요");
-            println!("     \x1b[2m`brew install gh` 뒤에 `gh auth login`을 해 주세요.\x1b[0m\n");
+            println!("  \x1b[33m▲\x1b[0m  gh is required to upload to GitHub");
+            println!("     \x1b[2mRun `brew install gh`, then `gh auth login`.\x1b[0m\n");
             return Ok(());
         }
     }
 
     match &status.remote {
         Some(url) => println!("     \x1b[2m{url}\x1b[0m"),
-        None => println!("     \x1b[2m아직 연결된 곳이 없어요. 새로 만들어 드릴게요.\x1b[0m"),
+        None => println!("     \x1b[2mNo repository is connected yet. A new one will be created.\x1b[0m"),
     }
     println!(
-        "     \x1b[2m백업 안 된 세이브 포인트 {}개\x1b[0m",
+        "     \x1b[2m{} save points not backed up\x1b[0m",
         status.unbacked
     );
 
@@ -168,14 +168,14 @@ fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> 
         return Ok(());
     }
     if status.unbacked == 0 && status.remote.is_some() {
-        println!("\n  이미 전부 백업돼 있어요.\n");
+        println!("\n  Everything is already backed up.\n");
         return Ok(());
     }
 
     // 올리기 전에 관문을 먼저 통과해야 한다. push는 되돌릴 수 없다.
     let blocking = backup::guard(project)?;
     if !blocking.is_empty() {
-        println!("\n  \x1b[33m▲ 백업을 멈췄어요\x1b[0m");
+        println!("\n  \x1b[33m▲ Backup stopped\x1b[0m");
         for f in &blocking {
             println!("     {}", f.message);
             if let Some(m) = &f.masked {
@@ -183,25 +183,25 @@ fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> 
             }
         }
         println!(
-            "\n  \x1b[2m한 번 올라간 키는 몇 분 안에 남이 긁어 갑니다. 먼저 .env로 옮겨 주세요.\x1b[0m\n"
+            "\n  \x1b[2mExposed keys can be scraped within minutes. Move it to .env first.\x1b[0m\n"
         );
         return Ok(());
     }
 
     if public {
-        println!("\n  \x1b[33m▲\x1b[0m  \x1b[1m누구나 볼 수 있게\x1b[0m 올립니다.");
+        println!("\n  \x1b[33m▲\x1b[0m  Uploading \x1b[1mpublicly\x1b[0m.");
     } else {
-        println!("\n  \x1b[2m나만 볼 수 있게 올립니다.\x1b[0m");
+        println!("\n  \x1b[2mUploading privately.\x1b[0m");
     }
-    println!("  \x1b[2m올리는 중…\x1b[0m");
+    println!("  \x1b[2mUploading…\x1b[0m");
 
     let done = backup::run(project, !public)?;
     println!(
-        "  \x1b[32m●\x1b[0m  백업했어요 — 세이브 포인트 {}개\n     \x1b[2m{}\x1b[0m",
+        "  \x1b[32m●\x1b[0m  Backed up {} save points\n     \x1b[2m{}\x1b[0m",
         done.backed_up, done.remote
     );
     if done.created {
-        println!("     \x1b[2m저장소를 새로 만들었어요.\x1b[0m");
+        println!("     \x1b[2mCreated a new repository.\x1b[0m");
     }
     println!();
     Ok(())
@@ -212,39 +212,39 @@ fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> 
 fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
     use kigtit_core::sync::{self, Outcome, Side};
 
-    println!("\n  \x1b[2mGitHub 쪽을 확인하는 중…\x1b[0m");
+    println!("\n  \x1b[2mChecking GitHub…\x1b[0m");
     match sync::sync(project)? {
         Outcome::NoRemote => {
-            println!("  아직 연결된 GitHub이 없어요.");
-            println!("  \x1b[2m`kigtit backup`으로 먼저 백업해 주세요.\x1b[0m\n");
+            println!("  No GitHub repository is connected yet.");
+            println!("  \x1b[2mRun `kigtit backup` first.\x1b[0m\n");
         }
-        Outcome::UpToDate => println!("  \x1b[32m●\x1b[0m  이미 같아요.\n"),
+        Outcome::UpToDate => println!("  \x1b[32m●\x1b[0m  Already up to date.\n"),
         Outcome::Pulled { count } => {
-            println!("  \x1b[32m●\x1b[0m  GitHub 쪽 세이브 포인트 {count}개를 가져왔어요.\n")
+            println!("  \x1b[32m●\x1b[0m  Pulled {count} save points from GitHub.\n")
         }
         Outcome::Merged { count } => println!(
-            "  \x1b[32m●\x1b[0m  겹치는 파일이 없어서 알아서 합쳤어요. GitHub 쪽 {count}개 반영.\n"
+            "  \x1b[32m●\x1b[0m  Merged automatically with no overlapping files. Applied {count} from GitHub.\n"
         ),
         Outcome::NeedsChoice { conflicts } => {
             let Some(side) = keep.as_deref() else {
                 println!(
-                    "\n  \x1b[33m▲ 선택이 필요해요\x1b[0m — 아래 파일을 양쪽에서 같이 고쳤어요."
+                    "\n  \x1b[33m▲ A choice is needed\x1b[0m — these files changed in both places."
                 );
                 println!(
-                    "  \x1b[2m작업 폴더는 아직 그대로입니다. 아무것도 잃지 않았어요.\x1b[0m\n"
+                    "  \x1b[2mYour working folder is unchanged. Nothing was lost.\x1b[0m\n"
                 );
                 for c in &conflicts {
                     let note = if c.mine_deleted {
-                        "  \x1b[2m(내 쪽에서는 지웠어요)\x1b[0m"
+                        "  \x1b[2m(deleted on this computer)\x1b[0m"
                     } else if c.theirs_deleted {
-                        "  \x1b[2m(GitHub 쪽에서는 지웠어요)\x1b[0m"
+                        "  \x1b[2m(deleted on GitHub)\x1b[0m"
                     } else {
                         ""
                     };
                     println!("    \x1b[33m▲\x1b[0m {}{}", c.path, note);
                 }
                 println!(
-                    "\n  \x1b[2m어느 쪽을 남길지 고르세요:\x1b[0m\n    kigtit sync --keep mine    \x1b[2m내 컴퓨터에서 한 것을 남긴다\x1b[0m\n    kigtit sync --keep theirs  \x1b[2mGitHub에 있던 것을 남긴다\x1b[0m\n"
+                    "\n  \x1b[2mChoose which version to keep:\x1b[0m\n    kigtit sync --keep mine    \x1b[2mkeep changes from this computer\x1b[0m\n    kigtit sync --keep theirs  \x1b[2mkeep changes from GitHub\x1b[0m\n"
                 );
                 return Ok(());
             };
@@ -258,16 +258,16 @@ fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
                 conflicts.iter().map(|c| (c.path.clone(), side)).collect();
             let sp = sync::resolve(project, &choices)?;
             println!(
-                "  \x1b[32m●\x1b[0m  {}쪽으로 정리했어요 \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
+                "  \x1b[32m●\x1b[0m  Kept the {} version \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
                 if side == Side::Mine {
-                    "내 "
+                    "local"
                 } else {
-                    "GitHub "
+                    "GitHub"
                 },
                 sp.id,
                 sp.title
             );
-            println!("     \x1b[2m마음에 안 들면 `kigtit undo`로 되돌릴 수 있어요.\x1b[0m\n");
+            println!("     \x1b[2mUse `kigtit undo` if you want to go back.\x1b[0m\n");
         }
     }
     Ok(())
@@ -297,7 +297,7 @@ fn dirs_home() -> Option<PathBuf> {
 fn cmd_open(root: &std::path::Path) -> Result<()> {
     let Some(app) = find_app() else {
         println!(
-            "\n  아직 Kigtit 앱이 설치되지 않았어요.\n  \x1b[2m`cargo tauri build`로 만든 뒤 Kigtit.app을 응용 프로그램 폴더에 넣어 주세요.\x1b[0m\n"
+            "\n  Kigtit is not installed yet.\n  \x1b[2mRun `cargo tauri build`, then put Kigtit.app in Applications.\x1b[0m\n"
         );
         return Ok(());
     };
@@ -309,7 +309,7 @@ fn cmd_open(root: &std::path::Path) -> Result<()> {
         .arg(root)
         .status()?;
     println!(
-        "\n  \x1b[35m◆\x1b[0m  Kigtit 창을 열었어요  \x1b[2m{}\x1b[0m\n",
+        "\n  \x1b[35m◆\x1b[0m  Opened Kigtit  \x1b[2m{}\x1b[0m\n",
         root.display()
     );
     Ok(())
@@ -322,14 +322,14 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
 
     let agent = ai::detect();
     println!(
-        "\n  \x1b[35m◆\x1b[0m  자동 저장을 켰어요  \x1b[2m{}\x1b[0m",
+        "\n  \x1b[35m◆\x1b[0m  Autosave on  \x1b[2m{}\x1b[0m",
         dir.display()
     );
     println!(
-        "     \x1b[2m파일이 바뀌고 {idle_secs}초 조용해지면 알아서 담습니다. 요약: {}\x1b[0m",
+        "     \x1b[2mSaves after files stay quiet for {idle_secs} seconds. Summaries: {}\x1b[0m",
         agent.label()
     );
-    println!("     \x1b[2m끄려면 Ctrl+C\x1b[0m\n");
+    println!("     \x1b[2mPress Ctrl+C to stop\x1b[0m\n");
 
     watch::watch(
         dir,
@@ -338,17 +338,17 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
         std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         |event| match event {
             Event::Changed { files } => {
-                println!("  \x1b[2m…\x1b[0m  파일 {files}개가 바뀌었어요");
+                println!("  \x1b[2m…\x1b[0m  {files} files changed");
             }
             Event::Saved(sp) => {
                 println!(
-                    "  \x1b[32m●\x1b[0m  담았어요  \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
+                    "  \x1b[32m●\x1b[0m  Saved  \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
                     sp.id, sp.title
                 );
             }
             Event::Resuming { count } => {
                 println!(
-                    "  \x1b[2m↻\x1b[0m  \x1b[2m꺼져 있는 동안 놓친 요약 {count}개를 이어서 채워요\x1b[0m"
+                    "  \x1b[2m↻\x1b[0m  \x1b[2mFinishing {count} summaries missed while Kigtit was closed\x1b[0m"
                 );
             }
             Event::Checked { outcome, .. } => {
@@ -378,11 +378,11 @@ fn cmd_watch(dir: &std::path::Path, idle_secs: u64) -> Result<()> {
                 );
             }
             Event::Blocked(findings) => {
-                println!("  \x1b[33m▲\x1b[0m  저장을 멈췄어요 — 비밀 키가 들어 있습니다");
+                println!("  \x1b[33m▲\x1b[0m  Saving paused — a secret key was found");
                 for f in findings.iter().filter(|f| f.risk == Risk::Secret) {
                     println!("     {}", f.message);
                 }
-                println!("     \x1b[2m`kigtit check`로 확인해 주세요\x1b[0m");
+                println!("     \x1b[2mRun `kigtit check` to review it\x1b[0m");
             }
         },
     )
@@ -400,24 +400,24 @@ fn cmd_list(project: &Project, limit: usize) -> Result<()> {
     println!();
     if !pending.is_empty() {
         println!(
-            "  \x1b[35m◆\x1b[0m  \x1b[2m{}\x1b[0m  \x1b[1m아직 저장되지 않은 변경 {}개\x1b[0m",
-            pad("지금", TIME_COL),
+            "  \x1b[35m◆\x1b[0m  \x1b[2m{}\x1b[0m  \x1b[1m{} unsaved changes\x1b[0m",
+            pad("Now", TIME_COL),
             pending.len()
         );
         let names: Vec<&str> = pending.iter().take(3).map(|f| f.path.as_str()).collect();
         let more = pending.len().saturating_sub(names.len());
         let extra = if more > 0 {
-            format!(" 외 {more}개")
+            format!(" and {more} more")
         } else {
             String::new()
         };
         println!("  │{}\x1b[2m{}{}\x1b[0m", rail(), names.join(", "), extra);
-        println!("  │{}\x1b[2m`kigtit save`로 담을 수 있어요\x1b[0m", rail());
+        println!("  │{}\x1b[2mUse `kigtit save` to save them\x1b[0m", rail());
         println!("  │");
     }
 
     if points.is_empty() {
-        println!("  아직 세이브 포인트가 없어요. `kigtit save`로 첫 저장을 만들어 보세요.\n");
+        println!("  No save points yet. Run `kigtit save` to create the first one.\n");
         return Ok(());
     }
 
@@ -445,7 +445,7 @@ fn cmd_list(project: &Project, limit: usize) -> Result<()> {
         );
 
         let body = if sp.pending_summary {
-            Some("요약 중…".to_string())
+            Some("Summarizing…".to_string())
         } else {
             sp.summary.clone()
         };
@@ -524,7 +524,7 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
     let findings = secrets::scan_pending(project)?;
     let blocking: Vec<_> = findings.iter().filter(|f| f.risk == Risk::Secret).collect();
     if !blocking.is_empty() {
-        println!("\n  \x1b[33m▲ 저장을 멈췄어요\x1b[0m");
+        println!("\n  \x1b[33m▲ Saving paused\x1b[0m");
         for f in &blocking {
             println!("    {}", f.message);
             if let Some(m) = &f.masked {
@@ -532,7 +532,7 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
             }
         }
         println!(
-            "\n  \x1b[2m`kigtit check --fix`로 안전하게 정리한 뒤 다시 저장해 주세요.\x1b[0m\n"
+            "\n  \x1b[2mRun `kigtit check --fix`, then save again.\x1b[0m\n"
         );
         return Ok(());
     }
@@ -544,11 +544,11 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
     };
     match kigtit_core::save::save(project, title.as_deref(), kind)? {
         SaveOutcome::NoChanges => {
-            println!("\n  바뀐 게 없어요. 저장할 것이 없습니다.\n");
+            println!("\n  Nothing changed. There is nothing to save.\n");
         }
         SaveOutcome::Saved(sp) => {
             println!(
-                "\n  \x1b[32m●\x1b[0m  저장했어요 \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
+                "\n  \x1b[32m●\x1b[0m  Saved \x1b[2m{}\x1b[0m  \x1b[1m{}\x1b[0m",
                 sp.id, sp.title
             );
             for f in &findings {
@@ -562,17 +562,17 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
             let agent = ai::detect();
             if agent == Agent::Rules {
                 println!(
-                    "     \x1b[2mAI CLI가 없어 파일 목록으로만 정리합니다. Claude Code를 설치하면 사람 말로 설명해 드려요.\x1b[0m"
+                    "     \x1b[2mNo AI CLI found, so only the file list is available. Install Claude Code for plain-language explanations.\x1b[0m"
                 );
             } else {
-                println!("     \x1b[2m{}로 요약하는 중…\x1b[0m", agent.label());
+                println!("     \x1b[2mSummarizing with {}…\x1b[0m", agent.label());
             }
             match ai::summarize_save_point(project, &sp.full_id, agent) {
                 Ok(s) => println!(
                     "     \x1b[1m{}\x1b[0m\n     \x1b[2m{}\x1b[0m\n",
                     s.title, s.summary
                 ),
-                Err(e) => println!("     \x1b[2m요약은 건너뛰었어요: {e}\x1b[0m\n"),
+                Err(e) => println!("     \x1b[2mSkipped summary: {e}\x1b[0m\n"),
             }
         }
     }
@@ -591,7 +591,7 @@ fn cmd_show(project: &Project, id: Option<String>, code: bool) -> Result<()> {
     );
     if let Some(how) = &sp.checked_by {
         println!(
-            "  {}  \x1b[2m{} · 확인: {}\x1b[0m",
+            "  {}  \x1b[2m{} · Checked by: {}\x1b[0m",
             sp.health.glyph(),
             sp.health.label(),
             how
@@ -606,10 +606,10 @@ fn cmd_show(project: &Project, id: Option<String>, code: bool) -> Result<()> {
     if let Some(s) = &sp.summary {
         println!("\n  {}", wrap_plain(s, 72));
     } else if sp.pending_summary {
-        println!("\n  \x1b[2m아직 요약이 없어요. `kigtit summarize`로 만들 수 있습니다.\x1b[0m");
+        println!("\n  \x1b[2mNo summary yet. Run `kigtit summarize` to create one.\x1b[0m");
     }
 
-    println!("\n  \x1b[2m바뀐 파일 {}개\x1b[0m", sp.files.len());
+    println!("\n  \x1b[2m{} changed files\x1b[0m", sp.files.len());
     for f in &sp.files {
         println!(
             "    {:<44} \x1b[2m{}\x1b[0m  \x1b[32m+{}\x1b[0m \x1b[31m-{}\x1b[0m",
@@ -621,7 +621,7 @@ fn cmd_show(project: &Project, id: Option<String>, code: bool) -> Result<()> {
         let commit = timeline::resolve(project, &id)?;
         println!("\n{}", ai::patch_for(project, &commit)?);
     } else {
-        println!("\n  \x1b[2m코드로 보려면 --code\x1b[0m\n");
+        println!("\n  \x1b[2mUse --code to show code\x1b[0m\n");
     }
     Ok(())
 }
@@ -654,13 +654,13 @@ fn cmd_restore(project: &Project, id: Option<String>) -> Result<()> {
     };
 
     println!(
-        "\n  \x1b[32m●\x1b[0m  \x1b[1m{}\x1b[0m 시점으로 되돌렸어요 \x1b[2m{}\x1b[0m",
+        "\n  \x1b[32m●\x1b[0m  Restored to \x1b[1m{}\x1b[0m \x1b[2m{}\x1b[0m",
         done.target_title, done.target_id
     );
     if let Some(snap) = &done.snapshot_id {
-        println!("     \x1b[2m되돌리기 직전 상태는 {snap}에 담아뒀어요.\x1b[0m");
+        println!("     \x1b[2mThe state before restoring was saved as {snap}.\x1b[0m");
     }
-    println!("     \x1b[2m되돌린 것도 되돌릴 수 있어요 → kigtit undo\x1b[0m\n");
+    println!("     \x1b[2mYou can undo the restore too → kigtit undo\x1b[0m\n");
     Ok(())
 }
 
@@ -669,7 +669,7 @@ fn cmd_restore(project: &Project, id: Option<String>) -> Result<()> {
 fn cmd_check(project: &Project, fix: bool) -> Result<()> {
     let findings = secrets::scan_pending(project)?;
     if findings.is_empty() {
-        println!("\n  \x1b[32m●\x1b[0m  위험한 파일이 없어요.\n");
+        println!("\n  \x1b[32m●\x1b[0m  No risky files found.\n");
         return Ok(());
     }
 
@@ -683,11 +683,11 @@ fn cmd_check(project: &Project, fix: bool) -> Result<()> {
         if let Some(m) = &f.masked {
             println!("     \x1b[2m{m}\x1b[0m");
         }
-        println!("     \x1b[2m추천: {}\x1b[0m", f.advice);
+        println!("     \x1b[2mRecommended: {}\x1b[0m", f.advice);
 
         if fix && f.risk == Risk::BigFile {
             project.exclude(&f.path)?;
-            println!("     \x1b[32m→ 백업에서 뺐어요.\x1b[0m");
+            println!("     \x1b[32m→ Excluded from backups.\x1b[0m");
         }
     }
 
@@ -695,11 +695,11 @@ fn cmd_check(project: &Project, fix: bool) -> Result<()> {
         let left = findings.iter().filter(|f| f.risk == Risk::Secret).count();
         if left > 0 {
             println!(
-                "\n  \x1b[2m비밀 키 {left}건은 자동으로 옮기지 않았어요. 값을 .env로 옮기고 코드에서는 불러오도록 바꿔 주세요.\x1b[0m"
+                "\n  \x1b[2m{left} secret keys were not moved automatically. Move the values to .env and load them from your code.\x1b[0m"
             );
         }
     } else {
-        println!("\n  \x1b[2m대용량 파일을 바로 정리하려면 --fix\x1b[0m");
+        println!("\n  \x1b[2mUse --fix to exclude large files now\x1b[0m");
     }
     println!();
     Ok(())
@@ -712,7 +712,7 @@ fn cmd_health(project: &Project) -> Result<()> {
 
     match health::detect(&project.root) {
         // 조사(으로/로)는 라벨 끝글자에 따라 갈리므로 아예 쓰지 않는다.
-        Ok(probe) => println!("\n  \x1b[2m확인하는 중… ({})\x1b[0m", probe.label),
+        Ok(probe) => println!("\n  \x1b[2mChecking… ({})\x1b[0m", probe.label),
         Err(why) => println!("\n  \x1b[2m{why}\x1b[0m"),
     }
 
@@ -735,7 +735,7 @@ fn cmd_health(project: &Project) -> Result<()> {
             println!("     \x1b[2m{line}\x1b[0m");
         }
         println!(
-            "\n  \x1b[2m마지막으로 잘 켜졌던 시점으로 돌아가려면 `kigtit list`를 보세요.\x1b[0m"
+            "\n  \x1b[2mRun `kigtit list` to find the last point where the app started.\x1b[0m"
         );
     }
     println!();
@@ -771,17 +771,17 @@ fn cmd_summarize(project: &Project, limit: usize) -> Result<()> {
     let agent = ai::detect();
     if agent == Agent::Rules {
         println!(
-            "\n  \x1b[33m▲\x1b[0m  쓸 수 있는 AI CLI가 없어요. 파일 목록으로만 정리합니다.\n     \x1b[2mClaude Code나 Codex를 설치하면 사람 말로 설명해 드려요.\x1b[0m"
+            "\n  \x1b[33m▲\x1b[0m  No AI CLI is available. Only the file list will be shown.\n     \x1b[2mInstall Claude Code or Codex for plain-language explanations.\x1b[0m"
         );
     } else {
-        println!("\n  \x1b[2m{}로 요약하는 중…\x1b[0m", agent.label());
+        println!("\n  \x1b[2mSummarizing with {}…\x1b[0m", agent.label());
     }
 
     let done = ai::backfill(project, agent, limit)?;
     if done == 0 {
-        println!("  요약이 빠진 세이브 포인트가 없어요.\n");
+        println!("  No save points are missing summaries.\n");
     } else {
-        println!("  \x1b[32m●\x1b[0m  {done}개를 채웠어요. `kigtit list`로 확인해 보세요.\n");
+        println!("  \x1b[32m●\x1b[0m  Filled {done} summaries. Run `kigtit list` to review them.\n");
     }
     Ok(())
 }

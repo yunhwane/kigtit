@@ -35,7 +35,7 @@ export function Detail({
     return (
       <aside className="detail">
         <div className="drag" />
-        <p className="empty">왼쪽에서 세이브 포인트를 골라 보세요.</p>
+        <p className="empty">Choose a save point on the left.</p>
       </aside>
     );
   }
@@ -50,7 +50,7 @@ export function Detail({
         </span>
         <h3>{point.title}</h3>
         <span className="time">
-          {point.at_label} · 파일 {point.files.length}개 · {point.id}
+          {point.at_label} · {point.files.length} files · {point.id}
           {point.checked_by && ` · ${point.checked_by}`}
         </span>
       </div>
@@ -58,23 +58,23 @@ export function Detail({
       {/* 안 켜지는 이유. 사용자가 실제로 알아야 하는 유일한 기술적 정보다. */}
       {point.broke_because && (
         <div className="broke">
-          <span className="tag">왜 안 켜지나</span>
+          <span className="tag">Why it won't start</span>
           <pre>{point.broke_because}</pre>
         </div>
       )}
 
       <div className="summary">
-        <span className="tag">무엇이 바뀌었나</span>
+        <span className="tag">What changed</span>
         {point.summary ? (
           <p>{point.summary}</p>
         ) : (
           <>
             <p style={{ color: "var(--ink-3)" }}>
-              {summarizing ? "사람 말로 정리하는 중… 8초쯤 걸려요." : "아직 요약이 없어요."}
+              {summarizing ? "Writing a plain-language summary… This takes about 8 seconds." : "No summary yet."}
             </p>
             {!summarizing && (
               <button className="btn sm" onClick={() => onSummarize(point.full_id)}>
-                요약 만들기
+                Create summary
               </button>
             )}
           </>
@@ -100,7 +100,7 @@ export function Detail({
           className="btn wide"
           onClick={() => api.patch(point.full_id).then(setPatch).catch(() => setPatch(""))}
         >
-          코드로 보기
+          Show code
         </button>
       ) : (
         <Patch text={patch} />
@@ -108,7 +108,7 @@ export function Detail({
 
       {/* 판정은 자동으로 돈다. 이 버튼은 지금 당장 다시 보고 싶을 때만 쓴다. */}
       <button className="btn wide" onClick={onCheck} disabled={checking}>
-        {checking ? "확인하는 중…" : "앱이 켜지는지 지금 확인"}
+        {checking ? "Checking…" : "Check whether the app starts now"}
       </button>
       {probe && <p className="probe">{probe}</p>}
 
@@ -117,25 +117,25 @@ export function Detail({
           className="btn sm"
           onClick={() => onMark(point.full_id, point.health === "ok" ? "unknown" : "ok")}
         >
-          {point.health === "ok" ? "잘 켜짐 표시 지우기" : "여기선 앱이 켜져요"}
+          {point.health === "ok" ? "Clear starts-fine mark" : "The app starts here"}
         </button>
         <button
           className="btn sm"
           onClick={() => onMark(point.full_id, point.health === "broken" ? "unknown" : "broken")}
         >
-          {point.health === "broken" ? "안 켜짐 표시 지우기" : "여기선 앱이 안 켜져요"}
+          {point.health === "broken" ? "Clear won't-start mark" : "The app won't start here"}
         </button>
       </div>
 
       <button className="btn wide danger" onClick={() => onRestore(point.full_id)}>
-        이 시점으로 되돌리기
+        Go back to this point
       </button>
     </aside>
   );
 }
 
 function Patch({ text }: { text: string }) {
-  if (!text.trim()) return <p className="empty">보여줄 코드가 없어요.</p>;
+  if (!text.trim()) return <p className="empty">No code to show.</p>;
   return (
     <pre className="patch">
       {text.split("\n").map((line, i) => (

@@ -28,13 +28,13 @@ pub use timeline::{FileChange, Health, SavePoint};
 /// 사용자에게 그대로 보여줄 수 있는 오류.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("폴더를 찾을 수 없어요: {0}")]
+    #[error("Folder not found: {0}")]
     NoFolder(String),
 
-    #[error("아직 세이브 포인트가 하나도 없어요. 먼저 저장해 주세요.")]
+    #[error("There are no save points yet. Save first.")]
     Empty,
 
-    #[error("'{0}' 세이브 포인트를 찾을 수 없어요.")]
+    #[error("Could not find save point '{0}'.")]
     NoSavePoint(String),
 
     #[error("{0}")]

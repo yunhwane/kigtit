@@ -44,16 +44,16 @@ struct Pattern {
 
 fn patterns() -> Vec<Pattern> {
     let raw: &[(&str, &str)] = &[
-        ("OpenAI 키", r"sk-(proj-)?[A-Za-z0-9_-]{20,}"),
-        ("Anthropic 키", r"sk-ant-[A-Za-z0-9_\-]{20,}"),
-        ("AWS 액세스 키", r"AKIA[0-9A-Z]{16}"),
-        ("Google API 키", r"AIza[0-9A-Za-z_\-]{35}"),
-        ("GitHub 토큰", r"gh[pousr]_[A-Za-z0-9]{36,}"),
-        ("Slack 토큰", r"xox[baprs]-[A-Za-z0-9\-]{10,}"),
-        ("Stripe 키", r"sk_live_[A-Za-z0-9]{20,}"),
-        ("개인 키 파일 내용", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+        ("OpenAI key", r"sk-(proj-)?[A-Za-z0-9_-]{20,}"),
+        ("Anthropic key", r"sk-ant-[A-Za-z0-9_\-]{20,}"),
+        ("AWS access key", r"AKIA[0-9A-Z]{16}"),
+        ("Google API key", r"AIza[0-9A-Za-z_\-]{35}"),
+        ("GitHub token", r"gh[pousr]_[A-Za-z0-9]{36,}"),
+        ("Slack token", r"xox[baprs]-[A-Za-z0-9\-]{10,}"),
+        ("Stripe key", r"sk_live_[A-Za-z0-9]{20,}"),
+        ("private key contents", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
         (
-            "비밀값처럼 보이는 설정",
+            "setting that looks like a secret",
             r#"(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*["'][^"'\s]{16,}["']"#,
         ),
     ];
@@ -66,7 +66,7 @@ fn patterns() -> Vec<Pattern> {
 pub fn scan_pending(project: &Project) -> Result<Vec<Finding>> {
     let paths: Vec<String> = crate::timeline::uncommitted(project)?
         .into_iter()
-        .filter(|f| f.kind != "삭제")
+        .filter(|f| f.kind != "Deleted")
         .map(|f| f.path)
         .collect();
     Ok(scan_paths(project, &paths))
@@ -79,7 +79,7 @@ pub fn scan_pending(project: &Project) -> Result<Vec<Finding>> {
 pub fn scan_tracked(project: &Project) -> Result<Vec<Finding>> {
     let mut paths: Vec<String> = crate::timeline::uncommitted(project)?
         .into_iter()
-        .filter(|f| f.kind != "삭제")
+        .filter(|f| f.kind != "Deleted")
         .map(|f| f.path)
         .collect();
 
@@ -119,11 +119,11 @@ pub fn scan_paths(project: &Project, rel_paths: &[String]) -> Vec<Finding> {
                 path: rel.clone(),
                 line: None,
                 message: format!(
-                    "{rel} 파일이 {}MB예요. 백업에 넣으면 나중에 느려집니다.",
+                    "{rel} is {} MB. Including it in backups may slow things down later.",
                     meta.len() / (1024 * 1024)
                 ),
                 masked: None,
-                advice: "백업에서 빼두기".into(),
+                advice: "Exclude from backups".into(),
             });
             continue;
         }
@@ -147,12 +147,11 @@ pub fn scan_paths(project: &Project, rel_paths: &[String]) -> Vec<Finding> {
                     path: rel.clone(),
                     line: Some(idx + 1),
                     message: format!(
-                        "{rel} {}번째 줄에 {}처럼 보이는 값이 있어요. 이대로 올리면 남이 가져다 쓸 수 있습니다.",
-                        idx + 1,
-                        pat.name
+                        "Line {} of {rel} contains what looks like a {}. Someone could use it if uploaded.",
+                        idx + 1, pat.name
                     ),
                     masked: Some(mask(m.as_str())),
-                    advice: "키를 .env 파일로 옮기고 백업에서 빼두기".into(),
+                    advice: "Move the key to an .env file and exclude it from backups".into(),
                 });
                 break; // 한 파일에서 한 번만 알린다.
             }
