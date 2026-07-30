@@ -156,7 +156,9 @@ fn cmd_backup(project: &Project, public: bool, status_only: bool) -> Result<()> 
 
     match &status.remote {
         Some(url) => println!("     \x1b[2m{url}\x1b[0m"),
-        None => println!("     \x1b[2mNo repository is connected yet. A new one will be created.\x1b[0m"),
+        None => println!(
+            "     \x1b[2mNo repository is connected yet. A new one will be created.\x1b[0m"
+        ),
     }
     println!(
         "     \x1b[2m{} save points not backed up\x1b[0m",
@@ -230,9 +232,7 @@ fn cmd_sync(project: &Project, keep: Option<String>) -> Result<()> {
                 println!(
                     "\n  \x1b[33m▲ A choice is needed\x1b[0m — these files changed in both places."
                 );
-                println!(
-                    "  \x1b[2mYour working folder is unchanged. Nothing was lost.\x1b[0m\n"
-                );
+                println!("  \x1b[2mYour working folder is unchanged. Nothing was lost.\x1b[0m\n");
                 for c in &conflicts {
                     let note = if c.mine_deleted {
                         "  \x1b[2m(deleted on this computer)\x1b[0m"
@@ -531,9 +531,7 @@ fn cmd_save(project: &Project, title: Option<String>, no_summary: bool) -> Resul
                 println!("    \x1b[2m{m}\x1b[0m");
             }
         }
-        println!(
-            "\n  \x1b[2mRun `kigtit check --fix`, then save again.\x1b[0m\n"
-        );
+        println!("\n  \x1b[2mRun `kigtit check --fix`, then save again.\x1b[0m\n");
         return Ok(());
     }
 
@@ -781,7 +779,9 @@ fn cmd_summarize(project: &Project, limit: usize) -> Result<()> {
     if done == 0 {
         println!("  No save points are missing summaries.\n");
     } else {
-        println!("  \x1b[32m●\x1b[0m  Filled {done} summaries. Run `kigtit list` to review them.\n");
+        println!(
+            "  \x1b[32m●\x1b[0m  Filled {done} summaries. Run `kigtit list` to review them.\n"
+        );
     }
     Ok(())
 }

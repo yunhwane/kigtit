@@ -220,9 +220,8 @@ fn parse(text: &str, agent: Agent) -> Result<Summary> {
     let start = text.find('{');
     let end = text.rfind('}');
     let raw: Raw = match (start, end) {
-        (Some(s), Some(e)) if e > s => {
-            serde_json::from_str(&text[s..=e]).map_err(|_| anyhow!("Could not read the summary."))?
-        }
+        (Some(s), Some(e)) if e > s => serde_json::from_str(&text[s..=e])
+            .map_err(|_| anyhow!("Could not read the summary."))?,
         _ => return Err(anyhow!("The summary is empty.")),
     };
 

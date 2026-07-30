@@ -70,9 +70,9 @@ pub fn undo(project: &Project) -> Result<Restored> {
     let head = project
         .head_commit()
         .ok_or_else(|| anyhow!("There are no save points yet."))?;
-    let parent = head
-        .parent(0)
-        .map_err(|_| anyhow!("This is the starting point, so there is nowhere further to go back."))?;
+    let parent = head.parent(0).map_err(|_| {
+        anyhow!("This is the starting point, so there is nowhere further to go back.")
+    })?;
     restore_to(project, &parent.id().to_string())
 }
 

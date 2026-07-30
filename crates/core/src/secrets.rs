@@ -51,7 +51,10 @@ fn patterns() -> Vec<Pattern> {
         ("GitHub token", r"gh[pousr]_[A-Za-z0-9]{36,}"),
         ("Slack token", r"xox[baprs]-[A-Za-z0-9\-]{10,}"),
         ("Stripe key", r"sk_live_[A-Za-z0-9]{20,}"),
-        ("private key contents", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+        (
+            "private key contents",
+            r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
+        ),
         (
             "setting that looks like a secret",
             r#"(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*["'][^"'\s]{16,}["']"#,

@@ -167,8 +167,8 @@ pub fn run(project: &Project, private: bool) -> Result<Done> {
         ));
     }
 
-    let branch =
-        current_branch(project).ok_or_else(|| anyhow!("Could not determine which branch to upload."))?;
+    let branch = current_branch(project)
+        .ok_or_else(|| anyhow!("Could not determine which branch to upload."))?;
     let count = unbacked(project, &branch)?;
 
     let created = match remote_url(project) {

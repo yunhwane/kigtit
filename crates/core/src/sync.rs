@@ -106,7 +106,13 @@ pub fn sync(project: &Project) -> Result<Outcome> {
     }
 
     let count = count_between(project, base_oid, theirs.id())?;
-    commit_merge(project, &mut index, &mine, &theirs, "Merge changes from GitHub")?;
+    commit_merge(
+        project,
+        &mut index,
+        &mine,
+        &theirs,
+        "Merge changes from GitHub",
+    )?;
     Ok(Outcome::Merged { count })
 }
 
@@ -132,7 +138,12 @@ pub fn resolve(project: &Project, choices: &[(String, Side)]) -> Result<SavePoin
             .iter()
             .find(|(p, _)| *p == conflict.path)
             .map(|(_, s)| *s)
-            .ok_or_else(|| anyhow!("You have not chosen which version of {} to keep.", conflict.path))?;
+            .ok_or_else(|| {
+                anyhow!(
+                    "You have not chosen which version of {} to keep.",
+                    conflict.path
+                )
+            })?;
         keep(&mut index, &conflict.path, side, &mine, &theirs)?;
     }
 
@@ -140,7 +151,13 @@ pub fn resolve(project: &Project, choices: &[(String, Side)]) -> Result<SavePoin
         return Err(anyhow!("Some files are still unresolved."));
     }
 
-    commit_merge(project, &mut index, &mine, &theirs, "Merge selected versions")
+    commit_merge(
+        project,
+        &mut index,
+        &mine,
+        &theirs,
+        "Merge selected versions",
+    )
 }
 
 /// 겹친 파일에서 양쪽이 무엇을 하려 했는지.
