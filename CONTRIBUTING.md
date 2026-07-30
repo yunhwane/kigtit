@@ -138,13 +138,25 @@ that says why if it isn't obvious. Korean or English are both fine.
 Maintainers only. See [CHANGELOG.md](CHANGELOG.md) for what's shipped.
 
 ```sh
-pnpm release          # interactive; bumps, tags, and drafts a GitHub release
-pnpm release --dry-run
+GITHUB_TOKEN=$(gh auth token) pnpm release
+GITHUB_TOKEN=$(gh auth token) pnpm release --dry-run
 ```
 
-`release-it` bumps `package.json`, then `scripts/sync-version.mjs` writes the
-same version into the Cargo workspace and `src-tauri/tauri.conf.json` so all
-three stay in step.
+**The token matters.** Without `GITHUB_TOKEN`, release-it falls back to opening a
+web form and the `releaseNotes` command is never run — you get the literal string
+`node scripts/release-notes.mjs ${version}` as your release body. With a token it
+uses the API and the notes are generated properly.
+
+`release-it` bumps `package.json`, then `scripts/sync-version.mjs` writes the same
+version into the Cargo workspace and `src-tauri/tauri.conf.json` so all three stay
+in step. `scripts/release-notes.mjs` pulls the matching section out of
+`CHANGELOG.md`, so the changelog is the only place release notes are written.
+
+**`--dry-run` still edits `package.json`.** release-it runs `npm version` for real
+even in a dry run. Follow a dry run with `git checkout -- package.json`.
+
+The release is created as a **draft** on purpose — `Kigtit.app` has to be attached
+by hand after `cargo tauri build`, since CI can't sign it.
 
 ## Code of conduct
 
